@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>寶可夢卡牌圖鑑</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+/* ════════════════════════════════════════════════════════
+   ★ 線上版說明：
+     1. 將下方 SHEET_CSV_URL 換成你的 Google Sheets 公開 CSV 網址
+     2. 圖片全部使用 CSV 裡的 image_url 欄位（官方網址），不需要本地圖片
+   ════════════════════════════════════════════════════════ */
+:root {
+  --bg:        #090d18;
+  --bg2:       #0f1526;
+  --surface:   #141b30;
+  --surface2:  #1a2340;
+  --border:    #1f2b4a;
+  --border2:   #2a3a64;
+  --gold:      #f0c040;
+  --gold-dim:  rgba(240,192,64,.15);
+  --blue:      #3060e0;
+  --blue-dim:  rgba(48,96,224,.2);
+  --red:       #e03040;
+  --text:      #d8e0f8;
+  --text2:     #7888b8;
+  --text3:     #404870;
+  --grass:#50c050;--fire:#e06030;--water:#3090f0;
+  --lightning:#f0c020;--psychic:#c060e0;--fighting:#c08030;
+  --dark:#7060b0;--metal:#9090b0;--fairy:#f080c0;
+  --dragon:#6050d0;--colorless:#9098b8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:14px;padding:8px 20px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border)}
+.pokeball{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:conic-gradient(var(--red) 180deg,#fff 180deg);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue),0 0 14px var(--blue-dim);position:relative}
+.pokeball::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#fff;border-radius:50%;border:2px solid #222}
+.logo-text{font-family:'Orbitron',sans-serif;font-size:1.1rem;letter-spacing:3px;color:var(--gold);text-shadow:0 0 16px var(--gold-dim)}
+.topbar-stats{margin-left:auto;font-size:.68rem;color:var(--text3);letter-spacing:.5px;text-align:right;line-height:1.8}
+.topbar-stats b{color:var(--gold);font-size:.8rem}
+
+/* ── LAYOUT ── */
+.layout{display:grid;grid-template-columns:230px 220px 1fr 310px;flex:1;overflow:hidden}
+
+/* ── LEFT ── */
+.left{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{padding:10px 14px 8px;flex-shrink:0;font-family:'Orbitron',sans-serif;font-size:.52rem;letter-spacing:3px;color:var(--gold);border-bottom:1px solid var(--border)}
+.filters{padding:10px;display:flex;flex-direction:column;gap:9px;overflow-y:auto;flex:1}
+.fg label{display:block;font-size:.8rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.fg input,.fg select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;font-size:.95rem;padding:7px 10px;outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.fg select option{background:var(--bg2)}
+.hp-row{display:grid;grid-template-columns:1fr 12px 1fr;gap:4px;align-items:center}
+.hp-sep{text-align:center;color:var(--text3);font-size:1rem}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{padding:3px 10px;border-radius:20px;font-size:.82rem;font-weight:700;cursor:pointer;border:1px solid transparent;opacity:.55;transition:all .12s;user-select:none}
+.chip:hover{opacity:.85}
+.chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 6px currentColor;transform:scale(1.07)}
+.chip[data-e="草"]{color:var(--grass);background:rgba(80,192,80,.12)}
+.chip[data-e="火"]{color:var(--fire);background:rgba(224,96,48,.12)}
+.chip[data-e="水"]{color:var(--water);background:rgba(48,144,240,.12)}
+.chip[data-e="雷"]{color:var(--lightning);background:rgba(240,192,32,.12)}
+.chip[data-e="超"]{color:var(--psychic);background:rgba(192,96,224,.12)}
+.chip[data-e="鬥"]{color:var(--fighting);background:rgba(192,128,48,.12)}
+.chip[data-e="惡"]{color:var(--dark);background:rgba(112,96,176,.12)}
+.chip[data-e="鋼"]{color:var(--metal);background:rgba(144,144,176,.12)}
+.chip[data-e="妖"]{color:var(--fairy);background:rgba(240,128,192,.12)}
+.chip[data-e="龍"]{color:var(--dragon);background:rgba(96,80,208,.12)}
+.chip[data-e="無"]{color:var(--colorless);background:rgba(144,152,184,.12)}
+.btn-search{margin:10px;flex-shrink:0;padding:10px;background:linear-gradient(135deg,var(--blue),#1840b0);border:none;border-radius:8px;color:#fff;font-family:'Orbitron',sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px var(--blue-dim)}
+.btn-search:hover{opacity:.9;transform:translateY(-1px)}
+.btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--text3);font-family:'Zen Kaku Gothic New',sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
+.btn-reset:hover{border-color:var(--red);color:var(--red)}
+
+/* ── CENTER ── */
+.center{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.result-bar{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rcount{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:1px;color:var(--text3)}
+.sort-sel{margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.7rem;padding:3px 7px;outline:none;font-family:'Zen Kaku Gothic New',sans-serif}
+.grid-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px;overflow-y:auto;flex:1;align-content:start}
+.card-thumb{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(--border);aspect-ratio:0.717;background:var(--surface);transition:transform .14s,border-color .14s,box-shadow .14s}
+.card-thumb:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.card-thumb.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 4px 16px var(--gold-dim)}
+.card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--text3);text-align:center;padding:6px;line-height:1.4}
+.empty-st{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px;color:var(--text3);font-size:.82rem}
+.empty-ball{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--surface2) 180deg,var(--bg2) 180deg);border:3px solid var(--border);opacity:.35}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.pager-btn{min-width:30px;height:28px;padding:0 7px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.72rem;cursor:pointer;transition:background .12s,color .12s;font-family:'Zen Kaku Gothic New',sans-serif;display:inline-flex;align-items:center;justify-content:center}
+.pager-btn:hover:not(:disabled){background:var(--surface2);color:var(--text)}
+.pager-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.pager-btn:disabled{opacity:.3;cursor:default}
+.pager-info{font-size:.68rem;color:var(--text3);padding:0 6px;white-space:nowrap}
+
+/* ── BIG IMAGE ── */
+.bigimg-panel{background:var(--bg2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px}
+.bigimg-panel img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.7);display:block}
+.bigimg-empty{color:var(--text3);font-size:.85rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bigimg-empty .empty-ball{width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--surface2) 180deg,var(--bg2) 180deg);border:3px solid var(--border);opacity:.35}
+
+/* ── RIGHT ── */
+.right{background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dtop{padding:12px 14px 9px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dname{font-size:1.4rem;font-weight:700;color:var(--gold);line-height:1.25;margin-bottom:5px}
+.dmeta{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-size:.8rem;padding:3px 9px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:var(--surface2)}
+.dbody{overflow-y:auto;flex:1;padding:11px 13px}
+.dsec{margin-bottom:13px}
+.dsec-hdr{font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:2px;color:var(--blue);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px}
+.srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:1rem}
+.sl{color:var(--text3)}.sv{color:var(--text);font-weight:500}
+.hp-badge{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.1rem;background:var(--red);color:#fff;padding:2px 11px;border-radius:4px;box-shadow:0 2px 8px rgba(224,48,64,.35)}
+.ability-card{background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--psychic);border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:8px}
+.aname{font-size:1rem;font-weight:700;color:var(--psychic);margin-bottom:4px}
+.aeff{font-size:.9rem;color:var(--text2);line-height:1.6}
+.atk-card{background:var(--bg2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;margin-bottom:8px}
+.atk-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.atk-name{font-size:1rem;font-weight:700;color:var(--text)}
+.cost-wrap{display:flex;gap:3px}
+.ec{width:18px;height:18px;border-radius:50%;font-size:.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ec-草{background:var(--grass);color:#fff}.ec-火{background:var(--fire);color:#fff}
+.ec-水{background:var(--water);color:#fff}.ec-雷{background:var(--lightning);color:#000}
+.ec-超{background:var(--psychic);color:#fff}.ec-鬥{background:var(--fighting);color:#fff}
+.ec-惡{background:var(--dark);color:#fff}.ec-鋼{background:var(--metal);color:#fff}
+.ec-妖{background:var(--fairy);color:#fff}.ec-龍{background:var(--dragon);color:#fff}
+.ec-無{background:var(--colorless);color:#222}
+.atk-dmg{font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:var(--gold);margin-left:auto}
+.atk-eff{font-size:.88rem;color:var(--text2);line-height:1.6}
+.eff-block{background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--blue);border-radius:0 6px 6px 0;padding:10px 13px;font-size:.9rem;color:var(--text2);line-height:1.7;white-space:pre-wrap}
+.bstats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:4px}
+.bstat{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:7px;text-align:center}
+.bstat-l{font-size:.72rem;letter-spacing:1px;color:var(--text3);margin-bottom:3px}
+.bstat-v{font-size:.95rem;font-weight:700;color:var(--text)}
+.rule-block{background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:6px;font-size:.88rem;color:#aab0cc;line-height:1.65}
+.no-detail{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);gap:10px;font-size:1rem}
+
+/* ── LOADING SCREEN ── */
+.loading-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;z-index:200;
+}
+.loading-screen h2{font-family:'Orbitron',sans-serif;font-size:1.5rem;letter-spacing:4px;color:var(--gold);text-shadow:0 0 24px var(--gold-dim)}
+.loading-bar-wrap{width:300px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--gold));border-radius:3px;width:0%;transition:width .3s ease}
+.loading-msg{font-size:.82rem;color:var(--text3);letter-spacing:.5px}
+.loading-err{
+  background:rgba(224,48,64,.1);border:1px solid var(--red);
+  border-radius:8px;padding:16px 24px;max-width:460px;
+  font-size:.82rem;color:#ffaaaa;line-height:1.8;text-align:center;
+  display:none;
+}
+.loading-err code{color:var(--gold);font-size:.85rem;display:block;margin-top:6px;word-break:break-all}
+.btn-retry{
+  margin-top:8px;padding:8px 20px;
+  background:transparent;border:1px solid var(--red);
+  border-radius:6px;color:var(--red);cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:.82rem;transition:all .15s;
+}
+.btn-retry:hover{background:rgba(224,48,64,.15)}
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN（自動載入，不需手動選檔）-->
+<div class="loading-screen" id="loadingScreen">
+  <div class="pokeball" style="width:52px;height:52px"></div>
+  <h2>POKÉMON CARD DEX</h2>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
+  <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
+  <div class="loading-err" id="loadingErr">
+    <div id="loadingErrMsg"></div>
+    <button class="btn-retry" id="retryBtn">重試</button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:10px">
+    <div class="pokeball"></div>
+    <span class="logo-text">CARD DEX</span>
+  </div>
+  <div class="topbar-stats">
+    已載入 <b id="totalCnt">0</b> 張　搜尋結果 <b id="resultCnt">0</b> 張
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT -->
+  <aside class="left">
+    <div class="panel-hdr">▸ FILTER</div>
+    <div class="filters">
+      <div class="fg"><label>名稱</label><input type="text" id="fName" placeholder="輸入卡牌名稱…"/></div>
+      <div class="fg"><label>卡片類型</label><select id="fType"><option value="">全部</option></select></div>
+      <div class="fg"><label>擴充包</label><select id="fSet"><option value="">全部</option></select></div>
+      <div class="fg"><label>規範標記</label><select id="fReg"><option value="">全部</option></select></div>
+      <div class="fg">
+        <label>屬性</label>
+        <div class="chips">
+          <span class="chip" data-e="草">草</span><span class="chip" data-e="火">火</span>
+          <span class="chip" data-e="水">水</span><span class="chip" data-e="雷">雷</span>
+          <span class="chip" data-e="超">超</span><span class="chip" data-e="鬥">鬥</span>
+          <span class="chip" data-e="惡">惡</span><span class="chip" data-e="鋼">鋼</span>
+          <span class="chip" data-e="妖">妖</span><span class="chip" data-e="龍">龍</span>
+          <span class="chip" data-e="無">無</span>
+        </div>
+      </div>
+      <div class="fg">
+        <label>HP 範圍</label>
+        <div class="hp-row">
+          <input type="number" id="fHpMin" placeholder="最小" min="0"/>
+          <span class="hp-sep">～</span>
+          <input type="number" id="fHpMax" placeholder="最大" min="0"/>
+        </div>
+      </div>
+      <div class="fg"><label>招式 / 效果關鍵字</label><input type="text" id="fEff" placeholder="效果文字搜尋…"/></div>
+    </div>
+    <button class="btn-search" id="searchBtn">🔍 SEARCH</button>
+    <button class="btn-reset" id="resetBtn">↺ 清除條件</button>
+  </aside>
+
+  <!-- CENTER（縮圖列表）-->
+  <main class="center">
+    <div class="result-bar">
+      <span class="rcount" id="rlabel">— 0 RESULTS —</span>
+      <select class="sort-sel" id="sortSel">
+        <option value="default">排序：預設</option>
+        <option value="hp_desc">HP 高→低</option>
+        <option value="hp_asc">HP 低→高</option>
+        <option value="name">名稱</option>
+        <option value="number">卡牌編號</option>
+      </select>
+    </div>
+    <div class="grid-wrap">
+      <div class="grid" id="grid">
+        <div class="empty-st"><div class="empty-ball"></div><span>資料載入中…</span></div>
+      </div>
+      <div class="pager" id="pager" style="display:none"></div>
+    </div>
+  </main>
+
+  <!-- BIG IMAGE -->
+  <div class="bigimg-panel" id="bigimgPanel">
+    <div class="bigimg-empty"><div class="empty-ball"></div><span>點擊卡片查看大圖</span></div>
+  </div>
+
+  <!-- RIGHT（詳情）-->
+  <aside class="right">
+    <div class="dtop" id="dtop">
+      <div class="dname">卡牌詳情</div>
+      <div class="dmeta"><span class="tag">點擊卡片查看</span></div>
+    </div>
+    <div class="dbody" id="dbody">
+      <div class="no-detail"><span style="font-size:2rem">🃏</span><span>尚未選擇卡片</span></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// ★ 設定：將這裡換成你的 Google Sheets 公開 CSV 網址
+//   格式：https://docs.google.com/spreadsheets/d/{試算表ID}/export?format=csv&gid=0
+// ════════════════════════════════════════════════════════
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1Be63ndyhxlqeFXjMlmtfMkr-M9cm-ElxfXDCrJLCTQC-jv6eY3qQJ0rL1MveHzQ_tgXVqC0/pub?output=csv';
+
+// ─── STATE ───────────────────────────────────────────────
+let ALL=[], FILTERED=[], SEL=null;
+const ACTIVE_TYPES = new Set();
+const PAGE_SIZE = 20;
+let curPage = 1;
+
+// ─── 自動載入 CSV ────────────────────────────────────────
+async function autoLoad(){
+  setLoading('正在連接 Google Sheets…', 20);
+
+  if(SHEET_CSV_URL === 'YOUR_GOOGLE_SHEETS_CSV_URL_HERE'){
+    showError(
+      '尚未設定資料來源！',
+      '請開啟此 HTML 檔案，將第一行 SHEET_CSV_URL 換成你的 Google Sheets CSV 網址。\n\n' +
+      '設定方法請參考 README.md。'
+    );
+    return;
+  }
+
+  try {
+    setLoading('下載卡牌資料…', 40);
+    const resp = await fetch(SHEET_CSV_URL);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+
+    setLoading('解析資料中…', 70);
+    const text = await resp.text();
+    const cards = parseCSV(text);
+
+    if(!cards.length) throw new Error('CSV 為空或格式錯誤');
+
+    setLoading(`載入完成！共 ${cards.length} 張卡牌`, 100);
+    setTimeout(()=>{
+      document.getElementById('loadingScreen').style.display='none';
+      loadCards(cards);
+    }, 400);
+
+  } catch(e) {
+    showError(
+      '載入失敗：' + e.message,
+      'SHEET_CSV_URL 設定值：',
+      SHEET_CSV_URL
+    );
+  }
+}
+
+function setLoading(msg, pct){
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingBar').style.width = pct + '%';
+}
+
+function showError(msg, hint='', url=''){
+  document.getElementById('loadingBar').style.width = '100%';
+  document.getElementById('loadingBar').style.background = 'var(--red)';
+  const errEl = document.getElementById('loadingErr');
+  errEl.style.display = 'block';
+  document.getElementById('loadingErrMsg').innerHTML =
+    `⚠ ${msg}<br><span style="color:var(--text3);font-size:.78rem">${hint}</span>` +
+    (url ? `<code>${url}</code>` : '');
+}
+
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  document.getElementById('loadingErr').style.display='none';
+  document.getElementById('loadingBar').style.background='linear-gradient(90deg,var(--blue),var(--gold))';
+  autoLoad();
+});
+
+// ─── CSV PARSER ──────────────────────────────────────────
+function parseCSV(txt){
+  const lines=txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if(!lines.length)return[];
+  const hdrs=splitL(lines[0]);
+  const out=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const vals=splitL(lines[i]);
+    const o={};
+    hdrs.forEach((h,idx)=>o[h.trim()]=(vals[idx]||'').trim());
+    out.push(o);
+  }
+  return out;
+}
+function splitL(line){
+  const r=[];let cur='',inQ=false;
+  for(const c of line){
+    if(c==='"')inQ=!inQ;
+    else if(c===','&&!inQ){r.push(cur);cur='';}
+    else cur+=c;
+  }
+  r.push(cur);return r;
+}
+
+// ─── LOAD ────────────────────────────────────────────────
+function loadCards(cards){
+  ALL=cards;
+  buildOpts();
+  document.getElementById('totalCnt').textContent=cards.length;
+  doSearch();
+}
+function buildOpts(){
+  const types=[...new Set(ALL.map(c=>c.card_type).filter(Boolean))].sort();
+  const sets =[...new Set(ALL.map(c=>c.set_name).filter(Boolean))].sort();
+  const regs =[...new Set(ALL.map(c=>c.regulation).filter(Boolean))].sort();
+  fillSel('fType',types);fillSel('fSet',sets);fillSel('fReg',regs);
+}
+function fillSel(id,opts){
+  const el=document.getElementById(id);
+  el.innerHTML='<option value="">全部</option>';
+  opts.forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;el.appendChild(op)});
+}
+
+// ─── SEARCH ──────────────────────────────────────────────
+function doSearch(){
+  const name =document.getElementById('fName').value.trim().toLowerCase();
+  const type =document.getElementById('fType').value;
+  const set  =document.getElementById('fSet').value;
+  const reg  =document.getElementById('fReg').value;
+  const hpMin=parseInt(document.getElementById('fHpMin').value)||0;
+  const hpMax=parseInt(document.getElementById('fHpMax').value)||Infinity;
+  const eff  =document.getElementById('fEff').value.trim().toLowerCase();
+  FILTERED=ALL.filter(c=>{
+    if(name&&!(c.name||'').toLowerCase().includes(name))return false;
+    if(type&&c.card_type!==type)return false;
+    if(set&&c.set_name!==set)return false;
+    if(reg&&c.regulation!==reg)return false;
+    const hp=parseInt(c.hp)||0;
+    if(hp<hpMin||hp>hpMax)return false;
+    if(ACTIVE_TYPES.size>0&&!ACTIVE_TYPES.has(c.types))return false;
+    if(eff&&!((c.abilities||'')+(c.attacks||'')).toLowerCase().includes(eff))return false;
+    return true;
+  });
+  curPage=1;applySort();
+}
+function applySort(){
+  const s=document.getElementById('sortSel').value;
+  if(s==='hp_desc')FILTERED.sort((a,b)=>(parseInt(b.hp)||0)-(parseInt(a.hp)||0));
+  else if(s==='hp_asc')FILTERED.sort((a,b)=>(parseInt(a.hp)||0)-(parseInt(b.hp)||0));
+  else if(s==='name')FILTERED.sort((a,b)=>(a.name||'').localeCompare(b.name||'','zh-TW'));
+  else if(s==='number')FILTERED.sort((a,b)=>(a.card_number||'').localeCompare(b.card_number||''));
+  curPage=1;renderGrid();
+}
+
+// ─── RENDER GRID ─────────────────────────────────────────
+function renderGrid(){
+  const g=document.getElementById('grid');
+  const pager=document.getElementById('pager');
+  const total=FILTERED.length;
+  const pages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  curPage=Math.min(curPage,pages);
+  document.getElementById('resultCnt').textContent=total;
+  document.getElementById('rlabel').textContent=`— ${total} RESULTS —`;
+  if(!total){
+    g.innerHTML='<div class="empty-st"><div class="empty-ball"></div><span>沒有符合條件的卡牌</span></div>';
+    pager.style.display='none';return;
+  }
+  const slice=FILTERED.slice((curPage-1)*PAGE_SIZE,curPage*PAGE_SIZE);
+  g.innerHTML='';
+  slice.forEach(card=>{
+    const div=document.createElement('div');
+    div.className='card-thumb'+(SEL&&SEL.card_id===card.card_id?' sel':'');
+    // 線上版只用 image_url（官方網址），不用本地路徑
+    const src=card.image_url||'';
+    if(src){
+      const img=document.createElement('img');
+      img.alt=card.name;img.loading='lazy';img.src=src;
+      img.onerror=()=>img.replaceWith(noImgEl(card.name));
+      div.appendChild(img);
+    }else{div.appendChild(noImgEl(card.name));}
+    div.addEventListener('click',()=>selectCard(card,div));
+    g.appendChild(div);
+  });
+  g.scrollTop=0;
+  renderPager(pages);
+}
+
+function renderPager(pages){
+  const pager=document.getElementById('pager');
+  if(pages<=1){pager.style.display='none';return;}
+  pager.style.display='flex';pager.innerHTML='';
+  const prev=mkBtn('‹',()=>goPage(curPage-1));prev.disabled=curPage===1;pager.appendChild(prev);
+  pageNums(curPage,pages).forEach(n=>{
+    if(n==='…'){const sp=document.createElement('span');sp.className='pager-info';sp.textContent='…';pager.appendChild(sp);}
+    else{const b=mkBtn(n,()=>goPage(n));if(n===curPage)b.classList.add('active');pager.appendChild(b);}
+  });
+  const next=mkBtn('›',()=>goPage(curPage+1));next.disabled=curPage===pages;pager.appendChild(next);
+  const info=document.createElement('span');info.className='pager-info';info.textContent=`${curPage}/${pages} 頁`;pager.appendChild(info);
+}
+function mkBtn(label,onClick){
+  const b=document.createElement('button');b.className='pager-btn';b.textContent=label;
+  b.addEventListener('click',onClick);return b;
+}
+function pageNums(cur,total){
+  if(total<=7)return Array.from({length:total},(_,i)=>i+1);
+  const n=[1];
+  if(cur>3)n.push('…');
+  for(let i=Math.max(2,cur-1);i<=Math.min(total-1,cur+1);i++)n.push(i);
+  if(cur<total-2)n.push('…');
+  n.push(total);return n;
+}
+function goPage(n){
+  const pages=Math.ceil(FILTERED.length/PAGE_SIZE);
+  if(n<1||n>pages)return;curPage=n;renderGrid();
+}
+function noImgEl(name){
+  const d=document.createElement('div');d.className='no-img';d.textContent=name||'—';return d;
+}
+
+// ─── SELECT CARD ─────────────────────────────────────────
+const POKE_T=new Set(['基礎','1階進化','2階進化']);
+const EFF_T=new Set(['支援者卡','物品卡','競技場卡','寶可夢道具','訓練家卡','特殊能量卡']);
+const TYPE_C={草:'var(--grass)',火:'var(--fire)',水:'var(--water)',雷:'var(--lightning)',超:'var(--psychic)',鬥:'var(--fighting)',惡:'var(--dark)',鋼:'var(--metal)',妖:'var(--fairy)',龍:'var(--dragon)',無:'var(--colorless)'};
+
+function selectCard(card,el){
+  document.querySelectorAll('.card-thumb.sel').forEach(e=>e.classList.remove('sel'));
+  if(el)el.classList.add('sel');
+  SEL=card;
+  // 大圖（用官方網址）
+  const panel=document.getElementById('bigimgPanel');
+  const src=card.image_url||'';
+  if(src){
+    const img=document.createElement('img');img.alt=card.name;img.src=src;
+    panel.innerHTML='';panel.appendChild(img);
+  }else{
+    panel.innerHTML='<div class="bigimg-empty"><div class="empty-ball"></div><span>無圖片</span></div>';
+  }
+  renderDetail(card);
+}
+
+function renderDetail(c){
+  const tc=TYPE_C[c.types]||'var(--text2)';
+  document.getElementById('dtop').innerHTML=`
+    <div class="dname">${esc(c.name||'—')}</div>
+    <div class="dmeta">
+      ${c.card_type?`<span class="tag">${esc(c.card_type)}</span>`:''}
+      ${c.card_number?`<span class="tag">#${esc(c.card_number)}</span>`:''}
+      ${c.regulation?`<span class="tag">規範 ${esc(c.regulation)}</span>`:''}
+      ${c.types?`<span class="tag" style="color:${tc};border-color:${tc}33">${esc(c.types)}</span>`:''}
+    </div>`;
+  const isPoke=POKE_T.has(c.card_type);
+  const isEff=EFF_T.has(c.card_type)||c.card_type==='基本能量卡';
+  let html='';
+  html+=`<div class="dsec"><div class="dsec-hdr">BASIC INFO</div>`;
+  if(c.hp)html+=`<div class="srow"><span class="sl">HP</span><span class="hp-badge">${esc(c.hp)}</span></div>`;
+  if(c.types)html+=`<div class="srow"><span class="sl">屬性</span><span class="sv" style="color:${tc}">${esc(c.types)}</span></div>`;
+  if(c.set_name)html+=`<div class="srow"><span class="sl">擴充包</span><span class="sv" style="font-size:.7rem;text-align:right;max-width:170px">${esc(c.set_name)}</span></div>`;
+  html+=`</div>`;
+  if(c.abilities){
+    html+=`<div class="dsec"><div class="dsec-hdr">特性 ABILITY</div>`;
+    c.abilities.split('|').map(s=>s.trim()).filter(Boolean).forEach(ab=>{
+      const p=ab.split(/\s{2,}/);
+      html+=`<div class="ability-card"><div class="aname">◆ ${esc(p[0]||'')}</div>${p.slice(1).join(' ').trim()?`<div class="aeff">${esc(p.slice(1).join(' ').trim())}</div>`:''}</div>`;
+    });html+=`</div>`;
+  }
+  if(isPoke&&c.attacks){
+    html+=`<div class="dsec"><div class="dsec-hdr">招式 ATTACKS</div>`;
+    c.attacks.split('|').map(s=>s.trim()).filter(Boolean).forEach(atk=>{
+      const p=atk.split(/\s{2,}/);
+      let aname='',costStr='',dmg='',eff='';
+      p.forEach(seg=>{
+        if(!aname){aname=seg;return}
+        if(seg.startsWith('(')&&seg.endsWith(')')){costStr=seg.slice(1,-1);return}
+        if(/^\d+\+?$/.test(seg)){dmg=seg;return}
+        eff+=(eff?' ':'')+seg;
+      });
+      const bubbles=costStr?costStr.split(' ').filter(Boolean).map(e=>`<span class="ec ec-${e}">${e[0]}</span>`).join(''):'';
+      html+=`<div class="atk-card"><div class="atk-hdr"><span class="atk-name">${esc(aname)}</span>${bubbles?`<span class="cost-wrap">${bubbles}</span>`:''}<span class="atk-dmg">${esc(dmg)}</span></div>${eff?`<div class="atk-eff">${esc(eff)}</div>`:''}</div>`;
+    });html+=`</div>`;
+  }
+  if(isEff&&c.attacks)html+=`<div class="dsec"><div class="dsec-hdr">效果 EFFECT</div><div class="eff-block">${esc(c.attacks)}</div></div>`;
+  if(isPoke&&(c.weakness||c.resistance||c.retreat_cost)){
+    html+=`<div class="dsec"><div class="dsec-hdr">對戰數值</div><div class="bstats">
+      <div class="bstat"><div class="bstat-l">弱點</div><div class="bstat-v">${esc(c.weakness||'—')}</div></div>
+      <div class="bstat"><div class="bstat-l">抵抗力</div><div class="bstat-v">${esc(c.resistance||'—')}</div></div>
+      <div class="bstat"><div class="bstat-l">撤退</div><div class="bstat-v">${esc(c.retreat_cost||'—')}</div></div>
+    </div></div>`;
+  }
+  if(c.rules){
+    html+=`<div class="dsec"><div class="dsec-hdr">規則 RULES</div>`;
+    c.rules.split('|').map(s=>s.trim()).filter(Boolean).forEach(r=>{html+=`<div class="rule-block">${esc(r)}</div>`});
+    html+=`</div>`;
+  }
+  if(!html.includes('dsec'))html='<div class="no-detail"><span>此卡牌無詳細資訊</span></div>';
+  document.getElementById('dbody').innerHTML=html;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+
+// ─── EVENTS ──────────────────────────────────────────────
+document.getElementById('searchBtn').addEventListener('click',doSearch);
+document.getElementById('fName').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+document.getElementById('sortSel').addEventListener('change',applySort);
+document.querySelectorAll('.chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    const t=chip.dataset.e;
+    if(ACTIVE_TYPES.has(t)){ACTIVE_TYPES.delete(t);chip.classList.remove('on')}
+    else{ACTIVE_TYPES.add(t);chip.classList.add('on')}
+  });
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ACTIVE_TYPES.clear();
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  curPage=1;doSearch();
+});
+
+// ─── 啟動 ───────────────────────────────────────────────
+autoLoad();
+</script>
+</body>
+</html>
