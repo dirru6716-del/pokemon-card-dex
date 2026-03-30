@@ -96,6 +96,23 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 .result-bar{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .rcount{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:1px;color:var(--text3)}
 .sort-sel{margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.7rem;padding:3px 7px;outline:none;font-family:'Zen Kaku Gothic New',sans-serif}
+.dedup-toggle{
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  font-size:.75rem;color:var(--text2);user-select:none;white-space:nowrap;
+}
+.dedup-toggle input{display:none}
+.dedup-box{
+  width:16px;height:16px;border-radius:4px;
+  border:1px solid var(--border2);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
+}
+.dedup-toggle input:checked + .dedup-box{
+  background:var(--blue);border-color:var(--blue);
+}
+.dedup-toggle input:checked + .dedup-box::after{
+  content:'✓';font-size:.65rem;color:#fff;font-weight:700;
+}
 .grid-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px;overflow-y:auto;flex:1;align-content:start}
 .card-thumb{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(--border);aspect-ratio:0.717;background:var(--surface);transition:transform .14s,border-color .14s,box-shadow .14s}
@@ -324,6 +341,11 @@ body.mobile .logo-text{font-size:.85rem;letter-spacing:2px}
   <main class="center">
     <div class="result-bar">
       <span class="rcount" id="rlabel">— 0 RESULTS —</span>
+      <label class="dedup-toggle" id="dedupLabel">
+        <input type="checkbox" id="dedupChk" checked/>
+        <span class="dedup-box"></span>
+        排除重複
+      </label>
       <select class="sort-sel" id="sortSel">
         <option value="default">排序：預設</option>
         <option value="hp_desc">HP 高→低</option>
@@ -514,28 +536,56 @@ function applySort(){
   else if(s==='hp_asc')FILTERED.sort((a,b)=>(parseInt(a.hp)||0)-(parseInt(b.hp)||0));
   else if(s==='name')FILTERED.sort((a,b)=>(a.name||'').localeCompare(b.name||'','zh-TW'));
   else if(s==='number')FILTERED.sort((a,b)=>(a.card_number||'').localeCompare(b.card_number||''));
-  curPage=1;renderGrid();
+
+  // 排除重複：以「名稱 + 特性 + 招式」作為 key，保留每組第一筆
+  const dedup = document.getElementById('dedupChk').checked;
+  let display = FILTERED;
+  if(dedup){
+    const seen = new Set();
+    display = FILTERED.filter(c=>{
+      const key = (c.name||'') + '||' + (c.abilities||'') + '||' + (c.attacks||'');
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  curPage=1;renderGrid(display);
 }
 
 // ─── RENDER GRID ─────────────────────────────────────────
-function renderGrid(){
+function renderGrid(display){
+  if(!display) display=FILTERED;
   const g=document.getElementById('grid');
   const pager=document.getElementById('pager');
-  const total=FILTERED.length;
+  const total=display.length;
   const pages=Math.max(1,Math.ceil(total/PAGE_SIZE));
   curPage=Math.min(curPage,pages);
   document.getElementById('resultCnt').textContent=total;
-  document.getElementById('rlabel').textContent=`— ${total} RESULTS —`;
+
+  // 顯示去重後的筆數，如果有去重就額外提示
+  const rawTotal = FILTERED.length;
+  const dedupOn  = document.getElementById('dedupChk').checked;
+  document.getElementById('rlabel').textContent =
+    dedupOn && rawTotal !== total
+      ? `— ${total} RESULTS（已排除 ${rawTotal-total} 筆重複）—`
+      : `— ${total} RESULTS —`;
+
   if(!total){
     g.innerHTML='<div class="empty-st"><div class="empty-ball"></div><span>沒有符合條件的卡牌</span></div>';
-    pager.style.display='none';return;
+    pager.style.display='none';
+
+    // 儲存當前 display 供換頁用
+    renderGrid._cur = display;
+    return;
   }
-  const slice=FILTERED.slice((curPage-1)*PAGE_SIZE,curPage*PAGE_SIZE);
+
+  renderGrid._cur = display;
+  const slice=display.slice((curPage-1)*PAGE_SIZE,curPage*PAGE_SIZE);
   g.innerHTML='';
   slice.forEach(card=>{
     const div=document.createElement('div');
     div.className='card-thumb'+(SEL&&SEL.card_id===card.card_id?' sel':'');
-    // 線上版只用 image_url（官方網址），不用本地路徑
     const src=card.image_url||'';
     if(src){
       const img=document.createElement('img');
@@ -575,8 +625,9 @@ function pageNums(cur,total){
   n.push(total);return n;
 }
 function goPage(n){
-  const pages=Math.ceil(FILTERED.length/PAGE_SIZE);
-  if(n<1||n>pages)return;curPage=n;renderGrid();
+  const display = renderGrid._cur || FILTERED;
+  const pages=Math.ceil(display.length/PAGE_SIZE);
+  if(n<1||n>pages)return;curPage=n;renderGrid(display);
 }
 function noImgEl(name){
   const d=document.createElement('div');d.className='no-img';d.textContent=name||'—';return d;
@@ -665,6 +716,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 document.getElementById('searchBtn').addEventListener('click',doSearch);
 document.getElementById('fName').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
 document.getElementById('sortSel').addEventListener('change',applySort);
+document.getElementById('dedupChk').addEventListener('change',applySort);
 document.querySelectorAll('.chip').forEach(chip=>{
   chip.addEventListener('click',()=>{
     // 屬性 chip（data-e）
