@@ -453,29 +453,49 @@ document.getElementById('retryBtn').addEventListener('click', ()=>{
   autoLoad();
 });
 
-// ─── CSV PARSER ──────────────────────────────────────────
+// ─── CSV PARSER（支援欄位內換行）────────────────────────
 function parseCSV(txt){
-  const lines=txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-  if(!lines.length)return[];
-  const hdrs=splitL(lines[0]);
-  const out=[];
-  for(let i=1;i<lines.length;i++){
-    if(!lines[i].trim())continue;
-    const vals=splitL(lines[i]);
-    const o={};
-    hdrs.forEach((h,idx)=>o[h.trim()]=(vals[idx]||'').trim());
+  // 正確處理 RFC 4180：quoted 欄位內可以有換行
+  const rows = splitCSVRows(txt);
+  if(rows.length < 2) return [];
+  const hdrs = rows[0].map(h => h.trim());
+  const out  = [];
+  for(let i = 1; i < rows.length; i++){
+    const vals = rows[i];
+    if(vals.every(v => !v.trim())) continue;  // 跳過空行
+    const o = {};
+    hdrs.forEach((h, idx) => {
+      // 把欄位內的換行轉成空格，避免顯示時斷掉
+      o[h] = (vals[idx] || '').trim().replace(/\n+/g, ' ').replace(/\r/g, '');
+    });
     out.push(o);
   }
   return out;
 }
-function splitL(line){
-  const r=[];let cur='',inQ=false;
-  for(const c of line){
-    if(c==='"')inQ=!inQ;
-    else if(c===','&&!inQ){r.push(cur);cur='';}
-    else cur+=c;
+
+function splitCSVRows(txt){
+  // 逐字元解析，正確處理 quoted multiline 欄位
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  // 統一換行符
+  txt = txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  for(let i = 0; i < txt.length; i++){
+    const ch = txt[i];
+    if(ch === '"'){
+      if(inQ && txt[i+1] === '"'){ cur += '"'; i++; }  // escaped quote ""
+      else inQ = !inQ;
+    } else if(ch === ',' && !inQ){
+      row.push(cur); cur = '';
+    } else if(ch === '\n' && !inQ){
+      row.push(cur); cur = '';
+      rows.push(row); row = [];
+    } else {
+      cur += ch;
+    }
   }
-  r.push(cur);return r;
+  // 最後一行
+  if(cur || row.length){ row.push(cur); rows.push(row); }
+  return rows;
 }
 
 // ─── LOAD ────────────────────────────────────────────────
@@ -589,8 +609,8 @@ function renderGrid(display){
     const src=card.image_url||'';
     if(src){
       const img=document.createElement('img');
-      img.alt=card.name;img.loading='lazy';img.src=src;
-      img.onerror=()=>img.replaceWith(noImgEl(card.name));
+      img.alt=card.name;img.loading='lazy';
+      setImgWithFallback(img, src);
       div.appendChild(img);
     }else{div.appendChild(noImgEl(card.name));}
     div.addEventListener('click',()=>selectCard(card,div));
@@ -633,6 +653,19 @@ function noImgEl(name){
   const d=document.createElement('div');d.className='no-img';d.textContent=name||'—';return d;
 }
 
+// 圖片 URL 處理：官方圖片直接用，載入失敗時改用 wsrv.nl proxy
+function imgSrc(url){ return url||''; }
+function setImgWithFallback(img, url){
+  if(!url){ img.replaceWith(noImgEl('')); return; }
+  img.src = url;
+  img.onerror = ()=>{
+    // 第一次失敗 → 試 proxy
+    const proxy = 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=400&output=jpg';
+    img.onerror = ()=>{ img.replaceWith(noImgEl(img.alt||'')); };
+    img.src = proxy;
+  };
+}
+
 // ─── SELECT CARD ─────────────────────────────────────────
 const POKE_T=new Set(['基礎','1階進化','2階進化']);
 const EFF_T=new Set(['支援者卡','物品卡','競技場卡','寶可夢道具','訓練家卡','特殊能量卡']);
@@ -646,7 +679,9 @@ function selectCard(card,el){
   const panel=document.getElementById('bigimgPanel');
   const src=card.image_url||'';
   if(src){
-    const img=document.createElement('img');img.alt=card.name;img.src=src;
+    const img=document.createElement('img');
+    img.alt=card.name;
+    setImgWithFallback(img, src);
     panel.innerHTML='';panel.appendChild(img);
   }else{
     panel.innerHTML='<div class="bigimg-empty"><div class="empty-ball"></div><span>無圖片</span></div>';
