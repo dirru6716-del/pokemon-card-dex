@@ -214,11 +214,14 @@ body.mobile .grid-wrap .grid{flex:none}
 
 /* 大圖 */
 body.mobile .bigimg-panel{
-  width:100%;height:auto;min-height:50vw;
+  width:100%;height:auto;
   border-left:none;border-top:1px solid var(--border);
-  padding:16px;
+  padding:0;
 }
-body.mobile .bigimg-panel img{max-height:70vw}
+body.mobile .bigimg-panel img{
+  width:100%;max-height:none;
+  border-radius:0;box-shadow:none;
+}
 
 /* 詳情 */
 body.mobile .right{
@@ -256,6 +259,8 @@ body.mobile .scroll-btns{display:flex}
 }
 .scroll-btn:hover{background:#2050c0;transform:scale(1.08)}
 .scroll-btn:active{transform:scale(.95)}
+.scroll-btn-clear{background:var(--red)}
+.scroll-btn-clear:hover{background:#b02020}
 
 /* ── LOADING SCREEN ── */
 .loading-screen{
@@ -403,6 +408,7 @@ body.mobile .scroll-btns{display:flex}
 <div class="scroll-btns" id="scrollBtns">
   <button class="scroll-btn" id="scrollTopBtn" title="回到最上方">↑</button>
   <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
+  <button class="scroll-btn scroll-btn-clear" id="floatResetBtn" title="清除搜尋條件">✕</button>
 </div>
 
 <script>
@@ -848,10 +854,19 @@ window.addEventListener('resize', ()=>{
 
 // ★ 浮動捲動按鈕
 document.getElementById('scrollTopBtn').addEventListener('click', ()=>{
-  window.scrollTo({top:0, behavior:'smooth'});
+  window.scrollTo({top:0,behavior:'smooth'});
 });
 document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
-  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+});
+document.getElementById('floatResetBtn').addEventListener('click', ()=>{
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ACTIVE_TYPES.clear();
+  ACTIVE_ATK_ENERGY.clear();
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  curPage=1;
+  doSearch();
+  window.scrollTo({top:0,behavior:'smooth'});
 });
 
 // 啟動時套用
