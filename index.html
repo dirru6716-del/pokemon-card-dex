@@ -183,30 +183,25 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 
 /* ══ 手機模式 ══════════════════════════════════════════════
    body.mobile 時，整體變成單欄垂直捲動
-   結構：篩選面板(收合) → 卡片格 → 大圖 → 詳情
+   結構：篩選面板(常開) → 卡片格 → 大圖 → 詳情
 ══════════════════════════════════════════════════════════ */
 body.mobile{overflow:auto}
 body.mobile .layout{
   display:flex;flex-direction:column;
   height:auto;overflow:visible;
 }
-/* 左側篩選：收合/展開 */
+/* 左側篩選：常開（移除收合） */
 body.mobile .left{
   width:100%;height:auto;border-right:none;
   border-bottom:1px solid var(--border);overflow:visible;
 }
 body.mobile .filters{
-  display:none;  /* 預設收合 */
-  max-height:70vh;overflow-y:auto;
+  display:flex;  /* ★ 改為常開 */
+  max-height:none;overflow-y:visible;
 }
-body.mobile .filters.open{display:flex}
 body.mobile .panel-hdr{
-  cursor:pointer;user-select:none;
   display:flex;align-items:center;justify-content:space-between;
 }
-body.mobile .panel-hdr::after{content:'▾';font-size:.9rem;color:var(--gold)}
-body.mobile .filters.open ~ .panel-hdr::after,
-body.mobile .panel-hdr.open::after{content:'▴'}
 
 /* 中間卡片格：3欄 */
 body.mobile .center{width:100%;overflow:visible;height:auto}
@@ -231,11 +226,36 @@ body.mobile .right{
   border-top:1px solid var(--border);
   overflow:visible;
 }
-body.mobile .dbody{overflow:visible;height:auto;padding-bottom:40px}
+body.mobile .dbody{overflow:visible;height:auto;padding-bottom:100px}
 
 /* 手機統計列 */
 body.mobile .topbar-stats{font-size:.62rem;line-height:1.5}
 body.mobile .logo-text{font-size:.85rem;letter-spacing:2px}
+
+/* ★ 手機換頁按鈕放大 */
+body.mobile .pager{padding:12px 8px;gap:6px}
+body.mobile .pager-btn{
+  min-width:44px;height:44px;font-size:1rem;
+  border-radius:8px;
+}
+body.mobile .pager-info{font-size:.82rem;padding:0 8px}
+
+/* ★ 浮動上下捲動按鈕 */
+.scroll-btns{
+  position:fixed;right:14px;bottom:24px;
+  display:none;flex-direction:column;gap:8px;z-index:100;
+}
+body.mobile .scroll-btns{display:flex}
+.scroll-btn{
+  width:46px;height:46px;border-radius:50%;
+  background:var(--blue);border:none;
+  color:#fff;font-size:1.2rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  transition:background .15s,transform .1s;
+}
+.scroll-btn:hover{background:#2050c0;transform:scale(1.08)}
+.scroll-btn:active{transform:scale(.95)}
 
 /* ── LOADING SCREEN ── */
 .loading-screen{
@@ -379,6 +399,12 @@ body.mobile .logo-text{font-size:.85rem;letter-spacing:2px}
   </aside>
 </div>
 
+<!-- 浮動上下捲動按鈕（手機模式才顯示）-->
+<div class="scroll-btns" id="scrollBtns">
+  <button class="scroll-btn" id="scrollTopBtn" title="回到最上方">↑</button>
+  <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════
 // ★ 設定：將這裡換成你的 Google Sheets 公開 CSV 網址
@@ -390,8 +416,11 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1B
 let ALL=[], FILTERED=[], SEL=null;
 const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
 const ACTIVE_ATK_ENERGY = new Set();  // 招式能量篩選
-const PAGE_SIZE = 20;
+const PAGE_SIZE_DESKTOP = 20;
+const PAGE_SIZE_MOBILE  = 18;  // ★ 3 的倍數，確保每頁剛好 3 欄整列
 let curPage = 1;
+
+function getPageSize(){ return isMobile ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP; }
 
 // ─── 自動載入 CSV ────────────────────────────────────────
 async function autoLoad(){
@@ -576,6 +605,7 @@ function applySort(){
 // ─── RENDER GRID ─────────────────────────────────────────
 function renderGrid(display){
   if(!display) display=FILTERED;
+  const PAGE_SIZE = getPageSize();
   const g=document.getElementById('grid');
   const pager=document.getElementById('pager');
   const total=display.length;
@@ -646,8 +676,11 @@ function pageNums(cur,total){
 }
 function goPage(n){
   const display = renderGrid._cur || FILTERED;
-  const pages=Math.ceil(display.length/PAGE_SIZE);
-  if(n<1||n>pages)return;curPage=n;renderGrid(display);
+  const pages=Math.ceil(display.length/getPageSize());
+  if(n<1||n>pages)return;
+  curPage=n;
+  renderGrid(display);
+  if(isMobile) window.scrollTo({top:0,behavior:'smooth'});
 }
 function noImgEl(name){
   const d=document.createElement('div');d.className='no-img';d.textContent=name||'—';return d;
@@ -780,24 +813,19 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 const modeBtn    = document.getElementById('modeBtn');
 const filterHdr  = document.getElementById('filterHdr');
 const filtersPnl = document.getElementById('filtersPanel');
-let   isMobile   = window.innerWidth < 768;  // 自動偵測
+let   isMobile   = window.innerWidth < 768;
 
 function applyMode(){
   if(isMobile){
     document.body.classList.add('mobile');
     modeBtn.textContent = '🖥 桌面版';
     modeBtn.classList.add('mobile-on');
-    // 手機模式預設收合篩選
-    filtersPnl.classList.remove('open');
-    filterHdr.classList.remove('open');
     document.body.style.overflow = 'auto';
     document.querySelector('.layout').style.height = 'auto';
   } else {
     document.body.classList.remove('mobile');
     modeBtn.textContent = '📱 手機版';
     modeBtn.classList.remove('mobile-on');
-    filtersPnl.classList.remove('open');
-    filterHdr.classList.remove('open');
     document.body.style.overflow = 'hidden';
     document.querySelector('.layout').style.height = '';
   }
@@ -809,13 +837,6 @@ modeBtn.addEventListener('click', ()=>{
   applyMode();
 });
 
-// 手機模式：點標題收合/展開篩選
-filterHdr.addEventListener('click', ()=>{
-  if(!document.body.classList.contains('mobile')) return;
-  filtersPnl.classList.toggle('open');
-  filterHdr.classList.toggle('open');
-});
-
 // 自動偵測螢幕寬度
 window.addEventListener('resize', ()=>{
   const shouldMobile = window.innerWidth < 768;
@@ -823,6 +844,14 @@ window.addEventListener('resize', ()=>{
     isMobile = shouldMobile;
     applyMode();
   }
+});
+
+// ★ 浮動捲動按鈕
+document.getElementById('scrollTopBtn').addEventListener('click', ()=>{
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 });
 
 // 啟動時套用
