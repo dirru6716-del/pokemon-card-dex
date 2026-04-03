@@ -87,10 +87,10 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 .chip[data-a=“妖”]{color:var(–fairy);background:rgba(240,128,192,.12)}
 .chip[data-a=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
 .chip[data-a=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
-.btn-search{margin:10px;flex-shrink:0;padding:10px;background:linear-gradient(135deg,var(–blue),#1840b0);border:none;border-radius:8px;color:#fff;font-family:‘Orbitron’,sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px var(–blue-dim)}
+.btn-search{margin:10px;flex-shrink:0;padding:10px;background:#3060e0;background:linear-gradient(135deg,#3060e0,#1840b0);border:none;border-radius:8px;color:#fff;font-family:‘Orbitron’,sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px rgba(48,96,224,.35)}
 .btn-search:hover{opacity:.9;transform:translateY(-1px)}
-.btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:transparent;border:1px solid var(–border2);border-radius:8px;color:var(–text3);font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
-.btn-reset:hover{border-color:var(–red);color:var(–red)}
+.btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:#1a2340;border:1px solid #2a3a64;border-radius:8px;color:#7888b8;font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
+.btn-reset:hover{border-color:#e03040;color:#e03040}
 
 /* ── CENTER ── */
 .center{display:flex;flex-direction:column;overflow:hidden;background:var(–bg)}
@@ -148,10 +148,10 @@ content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
 .srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:1rem}
 .sl{color:var(–text3)}.sv{color:var(–text);font-weight:500}
 .hp-badge{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:1.1rem;background:var(–red);color:#fff;padding:2px 11px;border-radius:4px;box-shadow:0 2px 8px rgba(224,48,64,.35)}
-.ability-card{background:var(–bg2);border:1px solid var(–border);border-left:2px solid var(–psychic);border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:8px}
-.aname{font-size:1rem;font-weight:700;color:var(–psychic);margin-bottom:4px}
-.aeff{font-size:.9rem;color:var(–text2);line-height:1.6}
-.atk-card{background:var(–bg2);border:1px solid var(–border);border-radius:7px;padding:9px 11px;margin-bottom:8px}
+.ability-card{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #c060e0;border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:8px}
+.aname{font-size:1rem;font-weight:700;color:#c060e0;margin-bottom:4px}
+.aeff{font-size:.9rem;color:#7888b8;line-height:1.6}
+.atk-card{background:#0f1526;border:1px solid #1f2b4a;border-radius:7px;padding:9px 11px;margin-bottom:8px}
 .atk-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
 .atk-name{font-size:1rem;font-weight:700;color:var(–text)}
 .cost-wrap{display:flex;gap:3px}
@@ -162,15 +162,15 @@ content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
 .ec-惡{background:var(–dark);color:#fff}.ec-鋼{background:var(–metal);color:#fff}
 .ec-妖{background:var(–fairy);color:#fff}.ec-龍{background:var(–dragon);color:#fff}
 .ec-無{background:var(–colorless);color:#222}
-.atk-dmg{font-family:‘Orbitron’,sans-serif;font-size:1.2rem;font-weight:700;color:var(–gold);margin-left:auto}
-.atk-eff{font-size:.88rem;color:var(–text2);line-height:1.6}
-.eff-block{background:var(–bg2);border:1px solid var(–border);border-left:2px solid var(–blue);border-radius:0 6px 6px 0;padding:10px 13px;font-size:.9rem;color:var(–text2);line-height:1.7;white-space:pre-wrap}
+.atk-dmg{font-family:‘Orbitron’,sans-serif;font-size:1.2rem;font-weight:700;color:#f0c040;margin-left:auto}
+.atk-eff{font-size:.88rem;color:#7888b8;line-height:1.6}
+.eff-block{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #3060e0;border-radius:0 6px 6px 0;padding:10px 13px;font-size:.9rem;color:#7888b8;line-height:1.7;white-space:pre-wrap}
 .bstats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:4px}
-.bstat{background:var(–bg2);border:1px solid var(–border);border-radius:6px;padding:7px;text-align:center}
-.bstat-l{font-size:.72rem;letter-spacing:1px;color:var(–text3);margin-bottom:3px}
-.bstat-v{font-size:.95rem;font-weight:700;color:var(–text)}
-.rule-block{background:var(–bg2);border:1px solid var(–border);border-left:2px solid var(–gold);border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:6px;font-size:.88rem;color:#aab0cc;line-height:1.65}
-.no-detail{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(–text3);gap:10px;font-size:1rem}
+.bstat{background:#0f1526;border:1px solid #1f2b4a;border-radius:6px;padding:7px;text-align:center}
+.bstat-l{font-size:.72rem;letter-spacing:1px;color:#404870;margin-bottom:3px}
+.bstat-v{font-size:.95rem;font-weight:700;color:#d8e0f8}
+.rule-block{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #f0c040;border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:6px;font-size:.88rem;color:#aab0cc;line-height:1.65}
+.no-detail{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#404870;gap:10px;font-size:1rem}
 
 /* ── 切換按鈕 ── */
 .btn-mode{
@@ -252,7 +252,7 @@ display:none;flex-direction:column;gap:8px;z-index:100;
 body.mobile .scroll-btns{display:flex}
 .scroll-btn{
 width:46px;height:46px;border-radius:50%;
-background:var(–blue);border:none;
+background:#3060e0;border:none;
 color:#fff;font-size:1.2rem;cursor:pointer;
 display:flex;align-items:center;justify-content:center;
 box-shadow:0 4px 16px rgba(0,0,0,.5);
@@ -260,7 +260,7 @@ transition:background .15s,transform .1s;
 }
 .scroll-btn:hover{background:#2050c0;transform:scale(1.08)}
 .scroll-btn:active{transform:scale(.95)}
-.scroll-btn-clear{background:var(–red)}
+.scroll-btn-clear{background:#e03040}
 .scroll-btn-clear:hover{background:#b02020}
 
 /* ── 牌組抽屜 ── */
