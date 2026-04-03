@@ -304,30 +304,32 @@ flex-shrink:0;
 display:flex;gap:6px;margin-bottom:10px;
 }
 .rtab{
-flex:1;padding:6px;border-radius:6px;
-border:1px solid var(–border2);background:var(–bg2);
-color:var(–text3);font-size:.8rem;cursor:pointer;
+flex:1;padding:8px;border-radius:6px;
+border:1px solid #2a3a64;background:#0f1526;
+color:#7888b8;font-size:.88rem;cursor:pointer;
 text-align:center;transition:all .15s;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
+font-family:‘Zen Kaku Gothic New’,sans-serif;font-weight:500;
 }
-.rtab.on{background:var(–blue);border-color:var(–blue);color:#fff;font-weight:700}
+.rtab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
+.rtab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
 .deck-input-row{display:flex;gap:6px}
 .deck-code-input{
-flex:1;background:var(–bg2);border:1px solid var(–border);
-border-radius:6px;color:var(–text);
-font-family:‘Share Tech Mono’,monospace,sans-serif;
-font-size:.88rem;padding:8px 10px;outline:none;
-transition:border-color .15s;letter-spacing:1px;
+flex:1;background:#0f1526;border:1px solid #2a3a64;
+border-radius:6px;color:#d8e0f8;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+font-size:.9rem;padding:8px 10px;outline:none;
+transition:border-color .15s;
 }
-.deck-code-input:focus{border-color:var(–blue)}
-.deck-code-input::placeholder{color:var(–text3);letter-spacing:0;font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.8rem}
+.deck-code-input:focus{border-color:#3060e0}
+.deck-code-input::placeholder{color:#404870;font-size:.8rem}
 .btn-deck-fetch{
-padding:8px 14px;background:var(–blue);border:none;
-border-radius:6px;color:#fff;font-size:.8rem;cursor:pointer;
-transition:opacity .15s;white-space:nowrap;
+padding:8px 16px;background:#3060e0;border:none;
+border-radius:6px;color:#fff;font-size:.9rem;font-weight:700;
+cursor:pointer;transition:opacity .15s;white-space:nowrap;
 font-family:‘Zen Kaku Gothic New’,sans-serif;
 }
 .btn-deck-fetch:hover{opacity:.85}
+.btn-deck-fetch:disabled{opacity:.4;cursor:default}
 .deck-status{
 margin-top:8px;font-size:.72rem;color:var(–text3);
 min-height:18px;line-height:1.5;
@@ -1120,61 +1122,39 @@ function setDeckStatus(msg, cls){
 function parseTWDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const cards = [];
+  const seenSections = new Set(); // 記錄已處理的分類，避免處理下半段重複資料
 
-  // 頁面上半段結構：
-  // <h3>寶可夢卡(20)</h3>
-  // <ul>
-  //   <li><a href="/tw/card-search/detail/216/">...</a>  2</li>
-  // </ul>
-  // <h3>物品卡(14)</h3>  ...依此類推
-  //
-  // 下半段是列表模式（重複資料），我們只取上半段
-  // 判斷方式：li 裡沒有卡名文字（只有數字和 a），是上半段格式
-
-  // 用 h3 標題來追蹤目前分類
-  const body = doc.body;
-  let curSection = '';
-
-  // 遍歷所有 h3 和相鄰的 ul
-  body.querySelectorAll('h3').forEach(h3=>{
+  doc.body.querySelectorAll('h3').forEach(h3=>{
     const title = h3.textContent.trim();
-    // 只處理牌組分類的 h3（排除「牌組編碼」等其他標題）
     const sectionMatch = title.match(/^(.+?)[（(]\d+[)）]/);
     if(!sectionMatch) return;
-    curSection = sectionMatch[1].trim();
+    const curSection = sectionMatch[1].trim();
 
-    // 取緊接在這個 h3 後面的第一個 ul
-    let sibling = h3.nextElementSibling;
-    if(!sibling || sibling.tagName !== 'UL') return;
+    // ★ 遇到已出現過的分類 → 表示進入下半段，停止處理
+    if(seenSections.has(curSection)) return;
+    seenSections.add(curSection);
 
-    sibling.querySelectorAll('li').forEach(li=>{
+    // 取緊接的 ul
+    const ul = h3.nextElementSibling;
+    if(!ul || ul.tagName !== 'UL') return;
+
+    ul.querySelectorAll('li').forEach(li=>{
       const a = li.querySelector('a[href*="/card-search/detail/"]');
       if(!a) return;
-
-      // card_id
       const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
       if(!m) return;
       const card_id = m[1];
 
-      // 張數：li 的純文字（去掉 a 標籤內容後剩下的數字）
+      // 張數：li 文字去掉 a 裡的文字，剩下的就是數字
       const liText = li.textContent.trim();
       const aText  = a.textContent.trim();
-      const rest   = liText.replace(aText,'').trim();
-      const qty    = parseInt(rest) || 1;
+      const qty    = parseInt(liText.replace(aText,'').trim()) || 1;
 
       cards.push({ card_id, name: aText, qty, section: curSection });
     });
   });
 
-  // 去重（同 card_id 加總張數）
-  const merged = [];
-  cards.forEach(c=>{
-    const exist = merged.find(m=>m.card_id===c.card_id);
-    if(exist){ exist.qty += c.qty; }
-    else { merged.push({...c}); }
-  });
-
-  return merged;
+  return cards;
 }
 
 // ── 日本版解析 ───────────────────────────────────────────
