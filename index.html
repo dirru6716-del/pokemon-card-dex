@@ -1121,41 +1121,60 @@ function parseTWDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const cards = [];
 
-  // 取分類標題 + 卡牌列表
-  // 台灣版 recipe 的 list 區：每個 <li> 含 <a href="/tw/card-search/detail/{id}/"> 和張數
-  const sections = doc.querySelectorAll('h3, li');
+  // 頁面上半段結構：
+  // <h3>寶可夢卡(20)</h3>
+  // <ul>
+  //   <li><a href="/tw/card-search/detail/216/">...</a>  2</li>
+  // </ul>
+  // <h3>物品卡(14)</h3>  ...依此類推
+  //
+  // 下半段是列表模式（重複資料），我們只取上半段
+  // 判斷方式：li 裡沒有卡名文字（只有數字和 a），是上半段格式
+
+  // 用 h3 標題來追蹤目前分類
+  const body = doc.body;
   let curSection = '';
 
-  // 先用 list view（下半部有詳細文字列表）
-  // 格式：li 裡有 <a href=".../detail/{id}/">卡名</a>  和後面的文字包含張數
-  const listItems = doc.querySelectorAll('li');
-  listItems.forEach(li=>{
-    const a = li.querySelector('a[href*="/card-search/detail/"]');
-    if(!a) return;
+  // 遍歷所有 h3 和相鄰的 ul
+  body.querySelectorAll('h3').forEach(h3=>{
+    const title = h3.textContent.trim();
+    // 只處理牌組分類的 h3（排除「牌組編碼」等其他標題）
+    const sectionMatch = title.match(/^(.+?)[（(]\d+[)）]/);
+    if(!sectionMatch) return;
+    curSection = sectionMatch[1].trim();
 
-    // 取 card_id
-    const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
-    if(!m) return;
-    const card_id = m[1];
+    // 取緊接在這個 h3 後面的第一個 ul
+    let sibling = h3.nextElementSibling;
+    if(!sibling || sibling.tagName !== 'UL') return;
 
-    // 取張數：li 的 text 裡通常有兩位數字結尾如 "02" 或 "04"
-    const liText = li.textContent.trim();
-    const qtyM = liText.match(/(\d{2})$/);
-    const qty = qtyM ? parseInt(qtyM[1]) : 1;
+    sibling.querySelectorAll('li').forEach(li=>{
+      const a = li.querySelector('a[href*="/card-search/detail/"]');
+      if(!a) return;
 
-    // 取卡牌名：a 標籤文字
-    const name = a.textContent.trim();
+      // card_id
+      const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
+      if(!m) return;
+      const card_id = m[1];
 
-    // 取擴充包 + 卡號：li 裡非 a 的文字
-    const subText = liText.replace(name,'').replace(/\d{2}$/, '').trim();
+      // 張數：li 的純文字（去掉 a 標籤內容後剩下的數字）
+      const liText = li.textContent.trim();
+      const aText  = a.textContent.trim();
+      const rest   = liText.replace(aText,'').trim();
+      const qty    = parseInt(rest) || 1;
 
-    // 避免重複
-    if(card_id && !cards.find(c=>c.card_id===card_id)){
-      cards.push({card_id, name, qty, sub: subText});
-    }
+      cards.push({ card_id, name: aText, qty, section: curSection });
+    });
   });
 
-  return cards;
+  // 去重（同 card_id 加總張數）
+  const merged = [];
+  cards.forEach(c=>{
+    const exist = merged.find(m=>m.card_id===c.card_id);
+    if(exist){ exist.qty += c.qty; }
+    else { merged.push({...c}); }
+  });
+
+  return merged;
 }
 
 // ── 日本版解析 ───────────────────────────────────────────
@@ -1196,10 +1215,11 @@ function parseJPDeck(html){
 }
 
 // ── 渲染牌組列表 ─────────────────────────────────────────
-const DECK_SECTIONS = {
-  pokemon: ['寶可夢卡','寶可夢道具'],
-  trainer: ['物品卡','支援者卡','競技場卡'],
-  energy:  ['能量卡'],
+// 台灣版 h3 標題 → 顯示分組名稱對照
+const SECTION_LABEL = {
+  '寶可夢卡':'寶可夢','寶可夢道具':'寶可夢',
+  '物品卡':'訓練家','支援者卡':'訓練家','競技場卡':'訓練家','訓練家卡':'訓練家',
+  '能量卡':'能量','特殊能量卡':'能量','基本能量卡':'能量',
 };
 
 function renderDeckList(cards){
@@ -1209,39 +1229,49 @@ function renderDeckList(cards){
     return;
   }
 
-  // 對應 CSV 資料，補充圖片和類型資訊
+  // 對應 CSV 資料，補充圖片
   const enriched = cards.map(c=>{
     const csv = c.card_id ? ALL.find(a=>a.card_id===c.card_id) : null;
     return {...c, _csv: csv};
   });
 
-  // 依卡片類型分組
-  const groups = {
-    '寶可夢': enriched.filter(c=>c._csv && ['基礎','1階進化','2階進化'].includes(c._csv.card_type)),
-    '訓練家': enriched.filter(c=>c._csv && ['物品卡','支援者卡','競技場卡','寶可夢道具'].includes(c._csv.card_type)),
-    '能量':   enriched.filter(c=>c._csv && c._csv.card_type.includes('能量')),
-    '未比對': enriched.filter(c=>!c._csv),
-  };
+  // 依照 section 分組（台灣版用 h3 標題，日本版用 CSV card_type）
+  const groupMap = {};
+  enriched.forEach(c=>{
+    // 優先用解析時記錄的 section，否則從 CSV card_type 推斷
+    let grpRaw = c.section || c._csv?.card_type || '其他';
+    const grp = SECTION_LABEL[grpRaw] || grpRaw;
+    if(!groupMap[grp]) groupMap[grp] = [];
+    groupMap[grp].push(c);
+  });
+
+  // 固定順序
+  const ORDER = ['寶可夢','訓練家','能量','其他'];
+  const sortedGroups = [
+    ...ORDER.filter(k=>groupMap[k]).map(k=>[k,groupMap[k]]),
+    ...Object.entries(groupMap).filter(([k])=>!ORDER.includes(k)),
+  ];
 
   let html = '';
-  Object.entries(groups).forEach(([sec, list])=>{
+  sortedGroups.forEach(([sec, list])=>{
     if(!list.length) return;
     const total = list.reduce((s,c)=>s+c.qty,0);
     html += `<div class="deck-section-title">${sec}（${total}張）</div>`;
     list.forEach(c=>{
       const imgSrc = c._csv?.image_url || '';
-      const sub    = c._csv
+      const sub = c._csv
         ? (c._csv.set_name||'') + (c._csv.card_number ? ' #'+c._csv.card_number : '')
         : c.sub || '';
+      const nameShow = c._csv?.name || c.name || '—';
       html += `
-        <div class="deck-card-row" data-cid="${c.card_id||''}" data-idx="${enriched.indexOf(c)}">
+        <div class="deck-card-row" data-cid="${c.card_id||''}">
           ${imgSrc
-            ? `<img class="deck-card-thumb" src="${imgSrc}" alt="${esc(c.name)}"
+            ? `<img class="deck-card-thumb" src="${imgSrc}" alt="${esc(nameShow)}"
                 onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${imgSrc}')+'&w=80&output=jpg'">`
-            : `<div class="deck-card-thumb" style="display:flex;align-items:center;justify-content:center;font-size:.5rem;color:var(--text3);padding:2px">${esc(c.name)}</div>`
+            : `<div class="deck-card-thumb" style="display:flex;align-items:center;justify-content:center;font-size:.5rem;color:#7888b8;padding:2px;text-align:center">${esc(nameShow)}</div>`
           }
           <div class="deck-card-info">
-            <div class="deck-card-name">${esc(c.name)}</div>
+            <div class="deck-card-name">${esc(nameShow)}</div>
             <div class="deck-card-sub">${esc(sub)}</div>
           </div>
           <div class="deck-card-qty">×${c.qty}</div>
