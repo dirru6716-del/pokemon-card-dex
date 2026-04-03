@@ -263,6 +263,127 @@ transition:background .15s,transform .1s;
 .scroll-btn-clear{background:var(–red)}
 .scroll-btn-clear:hover{background:#b02020}
 
+/* ── 牌組抽屜 ── */
+.deck-drawer{
+position:fixed;top:0;left:0;width:100%;height:100%;
+z-index:150;display:none;
+}
+.deck-drawer.open{display:flex}
+.deck-backdrop{
+position:absolute;inset:0;
+background:rgba(9,13,24,.7);backdrop-filter:blur(4px);
+}
+.deck-panel{
+position:relative;z-index:1;
+width:420px;max-width:100%;
+background:var(–surface);
+border-right:1px solid var(–border);
+display:flex;flex-direction:column;
+animation:slideIn .2s ease;
+}
+@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.deck-panel-hdr{
+display:flex;align-items:center;justify-content:space-between;
+padding:14px 16px;border-bottom:1px solid var(–border);
+font-family:‘Orbitron’,sans-serif;font-size:.75rem;
+letter-spacing:2px;color:var(–gold);flex-shrink:0;
+}
+.deck-close{
+background:transparent;border:none;color:var(–text3);
+font-size:1.2rem;cursor:pointer;padding:2px 6px;
+transition:color .15s;
+}
+.deck-close:hover{color:var(–red)}
+
+/* 輸入區 */
+.deck-input-area{
+padding:14px 16px;border-bottom:1px solid var(–border);
+flex-shrink:0;
+}
+.deck-region-tabs{
+display:flex;gap:6px;margin-bottom:10px;
+}
+.rtab{
+flex:1;padding:6px;border-radius:6px;
+border:1px solid var(–border2);background:var(–bg2);
+color:var(–text3);font-size:.8rem;cursor:pointer;
+text-align:center;transition:all .15s;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+}
+.rtab.on{background:var(–blue);border-color:var(–blue);color:#fff;font-weight:700}
+.deck-input-row{display:flex;gap:6px}
+.deck-code-input{
+flex:1;background:var(–bg2);border:1px solid var(–border);
+border-radius:6px;color:var(–text);
+font-family:‘Share Tech Mono’,monospace,sans-serif;
+font-size:.88rem;padding:8px 10px;outline:none;
+transition:border-color .15s;letter-spacing:1px;
+}
+.deck-code-input:focus{border-color:var(–blue)}
+.deck-code-input::placeholder{color:var(–text3);letter-spacing:0;font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.8rem}
+.btn-deck-fetch{
+padding:8px 14px;background:var(–blue);border:none;
+border-radius:6px;color:#fff;font-size:.8rem;cursor:pointer;
+transition:opacity .15s;white-space:nowrap;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+}
+.btn-deck-fetch:hover{opacity:.85}
+.deck-status{
+margin-top:8px;font-size:.72rem;color:var(–text3);
+min-height:18px;line-height:1.5;
+}
+.deck-status.err{color:#f08080}
+.deck-status.ok{color:#60d080}
+
+/* 牌組列表 */
+.deck-list{overflow-y:auto;flex:1;padding:10px 12px}
+.deck-section-title{
+font-size:.6rem;letter-spacing:2px;color:var(–gold);
+font-family:‘Orbitron’,sans-serif;
+border-bottom:1px solid var(–border);
+padding-bottom:5px;margin:10px 0 6px;
+}
+.deck-section-title:first-child{margin-top:0}
+.deck-card-row{
+display:flex;align-items:center;gap:10px;
+padding:6px 8px;border-radius:7px;cursor:pointer;
+transition:background .12s;margin-bottom:3px;
+}
+.deck-card-row:hover{background:var(–surface2)}
+.deck-card-row.sel{background:var(–surface2);border:1px solid var(–gold)}
+.deck-card-thumb{
+width:38px;height:53px;border-radius:4px;
+object-fit:cover;border:1px solid var(–border);
+background:var(–bg2);flex-shrink:0;
+}
+.deck-card-info{flex:1;min-width:0}
+.deck-card-name{
+font-size:.82rem;font-weight:700;color:var(–text);
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.deck-card-sub{font-size:.68rem;color:var(–text3);margin-top:2px}
+.deck-card-qty{
+font-family:‘Orbitron’,sans-serif;font-size:.9rem;
+font-weight:700;color:var(–gold);
+background:var(–surface2);border:1px solid var(–border);
+border-radius:5px;padding:2px 8px;flex-shrink:0;
+}
+.deck-empty{
+display:flex;flex-direction:column;align-items:center;
+justify-content:center;height:200px;gap:10px;
+color:var(–text3);font-size:.82rem;
+}
+
+/* topbar 牌組按鈕 */
+.btn-deck{
+padding:4px 12px;background:var(–surface2);
+border:1px solid var(–border2);border-radius:6px;
+color:var(–text2);font-size:.75rem;cursor:pointer;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+transition:all .15s;white-space:nowrap;
+}
+.btn-deck:hover{border-color:var(–gold);color:var(–gold)}
+
 /* ── LOADING SCREEN ── */
 .loading-screen{
 position:fixed;inset:0;background:var(–bg);
@@ -313,6 +434,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
     <span class="logo-text">CARD DEX</span>
   </div>
   <button class="btn-mode" id="modeBtn">📱 手機版</button>
+  <button class="btn-deck" id="deckBtn">🃏 牌組查詢</button>
   <div class="topbar-stats">
     已載入 <b id="totalCnt">0</b> 張　搜尋結果 <b id="resultCnt">0</b> 張
   </div>
@@ -417,6 +539,42 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   <button class="scroll-btn" id="scrollTopBtn" title="回到最上方">↑</button>
   <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
   <button class="scroll-btn scroll-btn-clear" id="floatResetBtn" title="清除搜尋條件">✕</button>
+</div>
+
+<!-- 牌組查詢抽屜 -->
+
+<div class="deck-drawer" id="deckDrawer">
+  <div class="deck-backdrop" id="deckBackdrop"></div>
+  <div class="deck-panel">
+
+```
+<div class="deck-panel-hdr">
+  🃏 DECK VIEWER
+  <button class="deck-close" id="deckClose">✕</button>
+</div>
+
+<div class="deck-input-area">
+  <div class="deck-region-tabs">
+    <div class="rtab on" data-region="tw">🇹🇼 台灣版</div>
+    <div class="rtab" data-region="jp">🇯🇵 日本版</div>
+  </div>
+  <div class="deck-input-row">
+    <input class="deck-code-input" id="deckCodeInput"
+      placeholder="輸入牌組代碼，例如 pghWwG-psGbro-ViVgUc"/>
+    <button class="btn-deck-fetch" id="deckFetchBtn">查詢</button>
+  </div>
+  <div class="deck-status" id="deckStatus"></div>
+</div>
+
+<div class="deck-list" id="deckList">
+  <div class="deck-empty">
+    <span style="font-size:2rem">🃏</span>
+    <span>輸入牌組代碼後查詢</span>
+  </div>
+</div>
+```
+
+  </div>
 </div>
 
 <script>
@@ -825,6 +983,250 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   curPage=1;doSearch();
 });
+
+// ─── 牌組查詢 ────────────────────────────────────────────
+const PROXY = 'https://corsproxy.io/?';
+let deckRegion = 'tw';  // 'tw' 或 'jp'
+
+// 開關抽屜
+document.getElementById('deckBtn').addEventListener('click',()=>{
+  document.getElementById('deckDrawer').classList.add('open');
+});
+document.getElementById('deckClose').addEventListener('click', closeDeck);
+document.getElementById('deckBackdrop').addEventListener('click', closeDeck);
+function closeDeck(){
+  document.getElementById('deckDrawer').classList.remove('open');
+}
+
+// 地區切換
+document.querySelectorAll('.rtab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('on'));
+    tab.classList.add('on');
+    deckRegion = tab.dataset.region;
+    document.getElementById('deckCodeInput').value='';
+    document.getElementById('deckStatus').textContent='';
+    document.getElementById('deckList').innerHTML=
+      '<div class="deck-empty"><span style="font-size:2rem">🃏</span><span>輸入牌組代碼後查詢</span></div>';
+  });
+});
+
+// Enter 觸發查詢
+document.getElementById('deckCodeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter') fetchDeck();
+});
+document.getElementById('deckFetchBtn').addEventListener('click', fetchDeck);
+
+async function fetchDeck(){
+  const code = document.getElementById('deckCodeInput').value.trim();
+  if(!code){ setDeckStatus('請輸入牌組代碼','err'); return; }
+
+  // 驗證格式：xxxxxx-xxxxxx-xxxxxx
+  if(!/^[A-Za-z0-9]+-[A-Za-z0-9]+-[A-Za-z0-9]+$/.test(code)){
+    setDeckStatus('格式錯誤，應為 xxxxxx-xxxxxx-xxxxxx','err'); return;
+  }
+
+  setDeckStatus('查詢中…','');
+  document.getElementById('deckFetchBtn').disabled = true;
+
+  try{
+    let url, html;
+    if(deckRegion === 'tw'){
+      url = `https://asia.pokemon-card.com/tw/deck-build/recipe/${code}/`;
+    } else {
+      url = `https://www.pokemon-card.com/deck/print.html/deckID/${code}/`;
+    }
+
+    const proxyUrl = PROXY + encodeURIComponent(url);
+    const resp = await fetch(proxyUrl);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    html = await resp.text();
+
+    const cards = deckRegion==='tw'
+      ? parseTWDeck(html)
+      : parseJPDeck(html);
+
+    if(!cards.length) throw new Error('找不到卡牌資料，請確認代碼是否正確');
+
+    const total = cards.reduce((s,c)=>s+c.qty,0);
+    setDeckStatus(`✓ 共 ${cards.length} 種卡牌 / ${total} 張`,'ok');
+    renderDeckList(cards);
+
+  } catch(e){
+    setDeckStatus('查詢失敗：' + e.message,'err');
+  } finally {
+    document.getElementById('deckFetchBtn').disabled = false;
+  }
+}
+
+function setDeckStatus(msg, cls){
+  const el = document.getElementById('deckStatus');
+  el.textContent = msg;
+  el.className = 'deck-status' + (cls ? ' '+cls : '');
+}
+
+// ── 台灣版解析 ───────────────────────────────────────────
+// recipe 頁面結構：
+//   <li>
+//     <a href="/tw/card-search/detail/216/">...<span>2</span></a>
+//     卡牌名（文字節點）
+//   </li>
+// 或 list view：
+//   <li>卡牌名 擴充包 編號 張數</li>
+function parseTWDeck(html){
+  const doc = new DOMParser().parseFromString(html,'text/html');
+  const cards = [];
+
+  // 取分類標題 + 卡牌列表
+  // 台灣版 recipe 的 list 區：每個 <li> 含 <a href="/tw/card-search/detail/{id}/"> 和張數
+  const sections = doc.querySelectorAll('h3, li');
+  let curSection = '';
+
+  // 先用 list view（下半部有詳細文字列表）
+  // 格式：li 裡有 <a href=".../detail/{id}/">卡名</a>  和後面的文字包含張數
+  const listItems = doc.querySelectorAll('li');
+  listItems.forEach(li=>{
+    const a = li.querySelector('a[href*="/card-search/detail/"]');
+    if(!a) return;
+
+    // 取 card_id
+    const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
+    if(!m) return;
+    const card_id = m[1];
+
+    // 取張數：li 的 text 裡通常有兩位數字結尾如 "02" 或 "04"
+    const liText = li.textContent.trim();
+    const qtyM = liText.match(/(\d{2})$/);
+    const qty = qtyM ? parseInt(qtyM[1]) : 1;
+
+    // 取卡牌名：a 標籤文字
+    const name = a.textContent.trim();
+
+    // 取擴充包 + 卡號：li 裡非 a 的文字
+    const subText = liText.replace(name,'').replace(/\d{2}$/, '').trim();
+
+    // 避免重複
+    if(card_id && !cards.find(c=>c.card_id===card_id)){
+      cards.push({card_id, name, qty, sub: subText});
+    }
+  });
+
+  return cards;
+}
+
+// ── 日本版解析 ───────────────────────────────────────────
+// print.html 的表格：| カード名 | 枚数 | エキスパンション | No. |
+function parseJPDeck(html){
+  const doc = new DOMParser().parseFromString(html,'text/html');
+  const cards = [];
+
+  doc.querySelectorAll('table').forEach(table=>{
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row=>{
+      const cells = row.querySelectorAll('td');
+      if(cells.length < 2) return;
+      const name = cells[0].textContent.trim();
+      const qty  = parseInt(cells[1].textContent.trim())||0;
+      const set  = cells[2]?.textContent.trim()||'';
+      const num  = cells[3]?.textContent.trim()||'';
+      if(!name || !qty || name==='ポケモン'||name==='グッズ'||
+         name==='サポート'||name==='スタジアム'||name==='エネルギー') return;
+
+      // 在 CSV 裡用 card_number 比對（格式相同如 059/083）
+      const matched = ALL.find(c=>
+        c.card_number === num ||
+        (c.set_name && set && c.set_name.includes(set) && c.card_number===num)
+      );
+
+      cards.push({
+        card_id: matched?.card_id || '',
+        name: matched?.name || name,  // 優先用中文名
+        qty,
+        sub: set + ' ' + num,
+        _matched: !!matched,
+      });
+    });
+  });
+
+  return cards;
+}
+
+// ── 渲染牌組列表 ─────────────────────────────────────────
+const DECK_SECTIONS = {
+  pokemon: ['寶可夢卡','寶可夢道具'],
+  trainer: ['物品卡','支援者卡','競技場卡'],
+  energy:  ['能量卡'],
+};
+
+function renderDeckList(cards){
+  const el = document.getElementById('deckList');
+  if(!cards.length){
+    el.innerHTML='<div class="deck-empty"><span>找不到卡牌資料</span></div>';
+    return;
+  }
+
+  // 對應 CSV 資料，補充圖片和類型資訊
+  const enriched = cards.map(c=>{
+    const csv = c.card_id ? ALL.find(a=>a.card_id===c.card_id) : null;
+    return {...c, _csv: csv};
+  });
+
+  // 依卡片類型分組
+  const groups = {
+    '寶可夢': enriched.filter(c=>c._csv && ['基礎','1階進化','2階進化'].includes(c._csv.card_type)),
+    '訓練家': enriched.filter(c=>c._csv && ['物品卡','支援者卡','競技場卡','寶可夢道具'].includes(c._csv.card_type)),
+    '能量':   enriched.filter(c=>c._csv && c._csv.card_type.includes('能量')),
+    '未比對': enriched.filter(c=>!c._csv),
+  };
+
+  let html = '';
+  Object.entries(groups).forEach(([sec, list])=>{
+    if(!list.length) return;
+    const total = list.reduce((s,c)=>s+c.qty,0);
+    html += `<div class="deck-section-title">${sec}（${total}張）</div>`;
+    list.forEach(c=>{
+      const imgSrc = c._csv?.image_url || '';
+      const sub    = c._csv
+        ? (c._csv.set_name||'') + (c._csv.card_number ? ' #'+c._csv.card_number : '')
+        : c.sub || '';
+      html += `
+        <div class="deck-card-row" data-cid="${c.card_id||''}" data-idx="${enriched.indexOf(c)}">
+          ${imgSrc
+            ? `<img class="deck-card-thumb" src="${imgSrc}" alt="${esc(c.name)}"
+                onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${imgSrc}')+'&w=80&output=jpg'">`
+            : `<div class="deck-card-thumb" style="display:flex;align-items:center;justify-content:center;font-size:.5rem;color:var(--text3);padding:2px">${esc(c.name)}</div>`
+          }
+          <div class="deck-card-info">
+            <div class="deck-card-name">${esc(c.name)}</div>
+            <div class="deck-card-sub">${esc(sub)}</div>
+          </div>
+          <div class="deck-card-qty">×${c.qty}</div>
+        </div>`;
+    });
+  });
+
+  el.innerHTML = html;
+
+  // 點擊行 → 觸發卡牌詳情
+  el.querySelectorAll('.deck-card-row').forEach(row=>{
+    row.addEventListener('click',()=>{
+      const cid = row.dataset.cid;
+      if(!cid){ return; }
+      const card = ALL.find(a=>a.card_id===cid);
+      if(!card){ setDeckStatus('此卡牌不在目前資料庫中（可能是未爬取的版本）','err'); return; }
+
+      // 高亮選中
+      el.querySelectorAll('.deck-card-row').forEach(r=>r.classList.remove('sel'));
+      row.classList.add('sel');
+
+      // 顯示卡牌詳情（使用現有功能）
+      selectCard(card, null);
+
+      // 手機版：關閉抽屜後可以看到大圖
+      if(isMobile) closeDeck();
+    });
+  });
+}
 
 // ─── 手機模式切換 ────────────────────────────────────────
 const modeBtn    = document.getElementById('modeBtn');
