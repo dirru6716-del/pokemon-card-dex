@@ -384,6 +384,38 @@ transition:all .15s;white-space:nowrap;
 }
 .btn-deck:hover{border-color:var(–gold);color:var(–gold)}
 
+/* 抽屜內卡牌詳情 */
+.deck-detail{
+position:absolute;inset:0;top:0;
+background:var(–surface);
+display:flex;flex-direction:column;
+overflow-y:auto;
+}
+.deck-detail-hdr{
+padding:10px 14px;border-bottom:1px solid var(–border);
+flex-shrink:0;
+}
+.deck-back{
+background:transparent;border:1px solid var(–border2);
+border-radius:6px;color:var(–text2);font-size:.8rem;
+padding:6px 14px;cursor:pointer;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+transition:all .15s;
+}
+.deck-back:hover{color:var(–text);border-color:var(–border)}
+.deck-detail-img{
+flex-shrink:0;background:var(–bg2);
+display:flex;align-items:center;justify-content:center;
+padding:0;
+}
+.deck-detail-img img{
+width:100%;display:block;
+}
+.deck-detail-body{
+padding:12px 14px 40px;
+flex:1;
+}
+
 /* ── LOADING SCREEN ── */
 .loading-screen{
 position:fixed;inset:0;background:var(–bg);
@@ -571,6 +603,15 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
     <span style="font-size:2rem">🃏</span>
     <span>輸入牌組代碼後查詢</span>
   </div>
+</div>
+
+<!-- 抽屜內的卡牌詳情（點卡片後顯示）-->
+<div class="deck-detail" id="deckDetail" style="display:none">
+  <div class="deck-detail-hdr">
+    <button class="deck-back" id="deckBack">← 返回牌組</button>
+  </div>
+  <div class="deck-detail-img" id="deckDetailImg"></div>
+  <div class="deck-detail-body" id="deckDetailBody"></div>
 </div>
 ```
 
@@ -996,6 +1037,9 @@ document.getElementById('deckClose').addEventListener('click', closeDeck);
 document.getElementById('deckBackdrop').addEventListener('click', closeDeck);
 function closeDeck(){
   document.getElementById('deckDrawer').classList.remove('open');
+  // 重置：下次開啟時顯示列表而非詳情
+  document.getElementById('deckDetail').style.display = 'none';
+  document.getElementById('deckList').style.display   = '';
 }
 
 // 地區切換
@@ -1207,11 +1251,11 @@ function renderDeckList(cards){
 
   el.innerHTML = html;
 
-  // 點擊行 → 觸發卡牌詳情
+  // 點擊行 → 在抽屜內顯示卡牌詳情
   el.querySelectorAll('.deck-card-row').forEach(row=>{
     row.addEventListener('click',()=>{
       const cid = row.dataset.cid;
-      if(!cid){ return; }
+      if(!cid){ setDeckStatus('此卡牌不在目前資料庫中','err'); return; }
       const card = ALL.find(a=>a.card_id===cid);
       if(!card){ setDeckStatus('此卡牌不在目前資料庫中（可能是未爬取的版本）','err'); return; }
 
@@ -1219,14 +1263,132 @@ function renderDeckList(cards){
       el.querySelectorAll('.deck-card-row').forEach(r=>r.classList.remove('sel'));
       row.classList.add('sel');
 
-      // 顯示卡牌詳情（使用現有功能）
+      // 同步顯示到主畫面（桌面版用）
       selectCard(card, null);
 
-      // 手機版：關閉抽屜後可以看到大圖
-      if(isMobile) closeDeck();
+      // 在抽屜內顯示大圖 + 詳情
+      showDeckCardDetail(card);
     });
   });
 }
+
+function showDeckCardDetail(card){
+  const detailEl = document.getElementById('deckDetail');
+  const listEl   = document.getElementById('deckList');
+  const imgEl    = document.getElementById('deckDetailImg');
+  const bodyEl   = document.getElementById('deckDetailBody');
+
+  // 大圖
+  const src = card.image_url || '';
+  if(src){
+    const img = document.createElement('img');
+    img.alt = card.name;
+    setImgWithFallback(img, src);
+    imgEl.innerHTML = '';
+    imgEl.appendChild(img);
+  } else {
+    imgEl.innerHTML = `<div style="padding:30px;color:var(--text3);font-size:.8rem">無圖片</div>`;
+  }
+
+  // 詳情內容（複用 renderDetail 的 HTML）
+  const tc = TYPE_C[card.types]||'var(--text2)';
+  const isPoke = POKE_T.has(card.card_type);
+  const isEff  = EFF_T.has(card.card_type)||card.card_type==='基本能量卡';
+  let html = '';
+
+  // 標題
+  html += `<div style="margin-bottom:10px">
+    <div style="font-size:1.2rem;font-weight:700;color:var(--gold)">${esc(card.name||'—')}</div>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px">
+      ${card.card_type?`<span class="tag">${esc(card.card_type)}</span>`:''}
+      ${card.card_number?`<span class="tag">#${esc(card.card_number)}</span>`:''}
+      ${card.types?`<span class="tag" style="color:${tc};border-color:${tc}33">${esc(card.types)}</span>`:''}
+    </div>
+  </div>`;
+
+  // 基本資訊
+  html += `<div class="dsec"><div class="dsec-hdr">BASIC INFO</div>`;
+  if(card.hp) html += `<div class="srow"><span class="sl">HP</span><span class="hp-badge">${esc(card.hp)}</span></div>`;
+  if(card.types) html += `<div class="srow"><span class="sl">屬性</span><span class="sv" style="color:${tc}">${esc(card.types)}</span></div>`;
+  if(card.set_name) html += `<div class="srow"><span class="sl">擴充包</span><span class="sv" style="font-size:.75rem">${esc(card.set_name)}</span></div>`;
+  html += '</div>';
+
+  // 特性
+  if(card.abilities){
+    html += `<div class="dsec"><div class="dsec-hdr">特性 ABILITY</div>`;
+    card.abilities.split('|').map(s=>s.trim()).filter(Boolean).forEach(ab=>{
+      const p = ab.split(/\s{2,}/);
+      html += `<div class="ability-card">
+        <div class="aname">◆ ${esc(p[0]||'')}</div>
+        ${p.slice(1).join(' ').trim()?`<div class="aeff">${esc(p.slice(1).join(' ').trim())}</div>`:''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // 招式
+  if(isPoke && card.attacks){
+    html += `<div class="dsec"><div class="dsec-hdr">招式 ATTACKS</div>`;
+    card.attacks.split('|').map(s=>s.trim()).filter(Boolean).forEach(atk=>{
+      const p = atk.split(/\s{2,}/);
+      let aname='',costStr='',dmg='',eff='';
+      p.forEach(seg=>{
+        if(!aname){aname=seg;return}
+        if(seg.startsWith('(')&&seg.endsWith(')')){costStr=seg.slice(1,-1);return}
+        if(/^\d+\+?$/.test(seg)){dmg=seg;return}
+        eff+=(eff?' ':'')+seg;
+      });
+      const bubbles=costStr?costStr.split(' ').filter(Boolean).map(e=>`<span class="ec ec-${e}">${e[0]}</span>`).join(''):'';
+      html += `<div class="atk-card">
+        <div class="atk-hdr">
+          <span class="atk-name">${esc(aname)}</span>
+          ${bubbles?`<span class="cost-wrap">${bubbles}</span>`:''}
+          <span class="atk-dmg">${esc(dmg)}</span>
+        </div>
+        ${eff?`<div class="atk-eff">${esc(eff)}</div>`:''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  // 效果
+  if(isEff && card.attacks){
+    html += `<div class="dsec"><div class="dsec-hdr">效果 EFFECT</div>
+      <div class="eff-block">${esc(card.attacks)}</div></div>`;
+  }
+
+  // 對戰數值
+  if(isPoke && (card.weakness||card.resistance||card.retreat_cost)){
+    html += `<div class="dsec"><div class="dsec-hdr">對戰數值</div>
+      <div class="bstats">
+        <div class="bstat"><div class="bstat-l">弱點</div><div class="bstat-v">${esc(card.weakness||'—')}</div></div>
+        <div class="bstat"><div class="bstat-l">抵抗力</div><div class="bstat-v">${esc(card.resistance||'—')}</div></div>
+        <div class="bstat"><div class="bstat-l">撤退</div><div class="bstat-v">${esc(card.retreat_cost||'—')}</div></div>
+      </div></div>`;
+  }
+
+  // 規則
+  if(card.rules){
+    html += `<div class="dsec"><div class="dsec-hdr">規則 RULES</div>`;
+    card.rules.split('|').map(s=>s.trim()).filter(Boolean).forEach(r=>{
+      html += `<div class="rule-block">${esc(r)}</div>`;
+    });
+    html += '</div>';
+  }
+
+  bodyEl.innerHTML = html;
+
+  // 切換顯示：隱藏列表，顯示詳情
+  listEl.style.display   = 'none';
+  detailEl.style.display = 'flex';
+  detailEl.scrollTop     = 0;
+}
+
+// 返回牌組列表
+document.getElementById('deckBack').addEventListener('click',()=>{
+  document.getElementById('deckDetail').style.display = 'none';
+  document.getElementById('deckList').style.display   = '';
+});
 
 // ─── 手機模式切換 ────────────────────────────────────────
 const modeBtn    = document.getElementById('modeBtn');
