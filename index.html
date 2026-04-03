@@ -1122,35 +1122,37 @@ function setDeckStatus(msg, cls){
 function parseTWDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const cards = [];
-  const seenSections = new Set(); // 記錄已處理的分類，避免處理下半段重複資料
+  const seenSections = new Set();
 
   doc.body.querySelectorAll('h3').forEach(h3=>{
     const title = h3.textContent.trim();
+    // 只處理分類標題，例如「寶可夢卡(20)」「物品卡(14)」
     const sectionMatch = title.match(/^(.+?)[（(]\d+[)）]/);
     if(!sectionMatch) return;
     const curSection = sectionMatch[1].trim();
 
-    // ★ 遇到已出現過的分類 → 表示進入下半段，停止處理
+    // ★ 第二次遇到同分類 → 下半段，停止
     if(seenSections.has(curSection)) return;
     seenSections.add(curSection);
 
-    // 取緊接的 ul
     const ul = h3.nextElementSibling;
     if(!ul || ul.tagName !== 'UL') return;
 
     ul.querySelectorAll('li').forEach(li=>{
       const a = li.querySelector('a[href*="/card-search/detail/"]');
       if(!a) return;
+
+      // card_id from href
       const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
       if(!m) return;
       const card_id = m[1];
 
-      // 張數：li 文字去掉 a 裡的文字，剩下的就是數字
-      const liText = li.textContent.trim();
-      const aText  = a.textContent.trim();
-      const qty    = parseInt(liText.replace(aText,'').trim()) || 1;
+      // ★ 張數：a 標籤內的純文字（img 沒有文字，只有最後的數字）
+      // a.textContent 範例："\n  \n  2" → 取最後的整數
+      const aText = a.textContent.trim();
+      const qty   = parseInt(aText.match(/(\d+)\s*$/)?.[1] || '1');
 
-      cards.push({ card_id, name: aText, qty, section: curSection });
+      cards.push({ card_id, qty, section: curSection });
     });
   });
 
@@ -1158,35 +1160,58 @@ function parseTWDeck(html){
 }
 
 // ── 日本版解析 ───────────────────────────────────────────
-// print.html 的表格：| カード名 | 枚数 | エキスパンション | No. |
+// print.html 結構：每個分類有自己的 <table>
+// 表格第一列第一格是分類名（ポケモン/グッズ等）
 function parseJPDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const cards = [];
 
+  // 日文分類 → 中文 section
+  const JP_SEC = {
+    'ポケモン':'寶可夢', 'ポケモンのどうぐ':'寶可夢',
+    'グッズ':'訓練家',  'サポート':'訓練家', 'スタジアム':'訓練家',
+    'エネルギー':'能量',
+  };
+  const SKIP = new Set(['ポケモン','ポケモンのどうぐ','グッズ','サポート',
+    'スタジアム','エネルギー','小計','合計','カード名',
+    'プレイヤーID','ニックネーム','生年月日','大会名','開催地','出場リーグ',
+    '氏名：カナ','氏名：漢字','']);
+
   doc.querySelectorAll('table').forEach(table=>{
-    const rows = table.querySelectorAll('tr');
-    rows.forEach(row=>{
+    // 判斷這個 table 屬於哪個分類
+    // 找最近的前置元素裡有沒有分類關鍵字（有些版本用 th，有些用獨立 table）
+    let section = '';
+    const firstTd = table.querySelector('td');
+    if(!firstTd) return;
+    const firstText = firstTd.textContent.trim();
+    if(JP_SEC[firstText]) section = JP_SEC[firstText];
+
+    // 如果第一格就是分類名，那這是「標題表格」，不是資料列，跳過
+    if(SKIP.has(firstText) && !section) return;
+
+    table.querySelectorAll('tr').forEach(row=>{
       const cells = row.querySelectorAll('td');
       if(cells.length < 2) return;
+
       const name = cells[0].textContent.trim();
       const qty  = parseInt(cells[1].textContent.trim())||0;
       const set  = cells[2]?.textContent.trim()||'';
       const num  = cells[3]?.textContent.trim()||'';
-      if(!name || !qty || name==='ポケモン'||name==='グッズ'||
-         name==='サポート'||name==='スタジアム'||name==='エネルギー') return;
 
-      // 在 CSV 裡用 card_number 比對（格式相同如 059/083）
-      const matched = ALL.find(c=>
-        c.card_number === num ||
-        (c.set_name && set && c.set_name.includes(set) && c.card_number===num)
-      );
+      if(!name || !qty || SKIP.has(name)) return;
 
+      // 用 card_number 在 CSV 比對
+      const matched = ALL.find(c=> c.card_number === num);
+
+      // 若有比對到 → 用中文資料；沒有 → 保留日文名稱和原始資訊
       cards.push({
         card_id: matched?.card_id || '',
-        name: matched?.name || name,  // 優先用中文名
+        name:    matched?.name || name,   // 有中文用中文，沒有保留日文
         qty,
-        sub: set + ' ' + num,
-        _matched: !!matched,
+        sub:     matched
+          ? (matched.set_name||'') + (matched.card_number ? ' #'+matched.card_number : '')
+          : set + (num ? ' '+num : ''),   // 沒比對到就顯示日文擴充包+編號
+        section: section || (matched ? SECTION_LABEL[matched.card_type]||'訓練家' : '訓練家'),
       });
     });
   });
@@ -1195,7 +1220,6 @@ function parseJPDeck(html){
 }
 
 // ── 渲染牌組列表 ─────────────────────────────────────────
-// 台灣版 h3 標題 → 顯示分組名稱對照
 const SECTION_LABEL = {
   '寶可夢卡':'寶可夢','寶可夢道具':'寶可夢',
   '物品卡':'訓練家','支援者卡':'訓練家','競技場卡':'訓練家','訓練家卡':'訓練家',
@@ -1209,40 +1233,43 @@ function renderDeckList(cards){
     return;
   }
 
-  // 對應 CSV 資料，補充圖片
+  // 對應 CSV 資料補充圖片
   const enriched = cards.map(c=>{
     const csv = c.card_id ? ALL.find(a=>a.card_id===c.card_id) : null;
     return {...c, _csv: csv};
   });
 
-  // 依照 section 分組（台灣版用 h3 標題，日本版用 CSV card_type）
+  // 分組
   const groupMap = {};
   enriched.forEach(c=>{
-    // 優先用解析時記錄的 section，否則從 CSV card_type 推斷
-    let grpRaw = c.section || c._csv?.card_type || '其他';
-    const grp = SECTION_LABEL[grpRaw] || grpRaw;
+    let grp;
+    if(c.section){
+      grp = c.section;
+    } else if(c._csv?.card_type){
+      grp = SECTION_LABEL[c._csv.card_type] || '訓練家';
+    } else {
+      grp = '訓練家';
+    }
     if(!groupMap[grp]) groupMap[grp] = [];
     groupMap[grp].push(c);
   });
 
-  // 固定順序
+  // ★ 固定順序：寶可夢 → 訓練家 → 能量 → 其他
   const ORDER = ['寶可夢','訓練家','能量','其他'];
   const sortedGroups = [
-    ...ORDER.filter(k=>groupMap[k]).map(k=>[k,groupMap[k]]),
+    ...ORDER.filter(k=>groupMap[k]).map(k=>[k, groupMap[k]]),
     ...Object.entries(groupMap).filter(([k])=>!ORDER.includes(k)),
   ];
 
   let html = '';
   sortedGroups.forEach(([sec, list])=>{
     if(!list.length) return;
-    const total = list.reduce((s,c)=>s+c.qty,0);
+    const total = list.reduce((s,c)=>s+c.qty, 0);
     html += `<div class="deck-section-title">${sec}（${total}張）</div>`;
     list.forEach(c=>{
-      const imgSrc = c._csv?.image_url || '';
-      const sub = c._csv
-        ? (c._csv.set_name||'') + (c._csv.card_number ? ' #'+c._csv.card_number : '')
-        : c.sub || '';
-      const nameShow = c._csv?.name || c.name || '—';
+      const imgSrc  = c._csv?.image_url || '';
+      const sub     = c.sub || '';
+      const nameShow= c._csv?.name || c.name || '—';
       html += `
         <div class="deck-card-row" data-cid="${c.card_id||''}">
           ${imgSrc
