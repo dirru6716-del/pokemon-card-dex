@@ -60,10 +60,18 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 .fg select option{background:var(–bg2)}
 .hp-row{display:grid;grid-template-columns:1fr 12px 1fr;gap:4px;align-items:center}
 .hp-sep{text-align:center;color:var(–text3);font-size:1rem}
-.chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{padding:3px 10px;border-radius:20px;font-size:.82rem;font-weight:700;cursor:pointer;border:1px solid transparent;opacity:.55;transition:all .12s;user-select:none}
-.chip:hover{opacity:.85}
-.chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 6px currentColor;transform:scale(1.07)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+padding:4px 10px;border-radius:20px;font-size:.82rem;
+font-weight:700;cursor:pointer;border:2px solid transparent;
+opacity:.55;transition:all .15s;user-select:none;
+display:flex;align-items:center;gap:4px;
+}
+.chip-img{
+width:20px;height:20px;object-fit:contain;flex-shrink:0;
+}
+.chip:hover{opacity:.85;transform:scale(1.05)}
+.chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 8px currentColor;transform:scale(1.1)}
 .chip[data-e=“草”]{color:var(–grass);background:rgba(80,192,80,.12)}
 .chip[data-e=“火”]{color:var(–fire);background:rgba(224,96,48,.12)}
 .chip[data-e=“水”]{color:var(–water);background:rgba(48,144,240,.12)}
