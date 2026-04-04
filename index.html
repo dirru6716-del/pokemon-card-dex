@@ -994,7 +994,106 @@ function renderDetail(c){
     html+=`</div>`;
   }
   if(!html.includes('dsec'))html='<div class="no-detail"><span>此卡牌無詳細資訊</span></div>';
-  document.getElementById('dbody').innerHTML=html;
+
+  // ★ 語音朗讀按鈕
+  html += `<div style="margin-top:16px;padding-bottom:20px">
+    <button class="btn-speak" id="speakBtn" onclick="speakCard()">
+      🔊 朗讀卡片資訊
+    </button>
+  </div>`;
+
+  document.getElementById('dbody').innerHTML = html;
+
+  // 儲存當前卡片供語音使用
+  window._speakCard = c;
+}
+
+function speakCard(){
+  const c = window._speakCard;
+  if(!c) return;
+
+  // 停止目前正在播放的語音
+  window.speechSynthesis.cancel();
+
+  const isPoke = POKE_T.has(c.card_type);
+  const isEff  = EFF_T.has(c.card_type)||c.card_type==='基本能量卡';
+
+  // 組合朗讀文字
+  let text = '';
+  text += `${c.name}。`;
+  if(c.card_type) text += `${c.card_type}。`;
+  if(c.hp)        text += `HP ${c.hp}。`;
+  if(c.types)     text += `屬性，${c.types}。`;
+
+  // 特性
+  if(c.abilities){
+    c.abilities.split('|').map(s=>s.trim()).filter(Boolean).forEach(ab=>{
+      const p = ab.split(/\s{2,}/);
+      text += `特性，${p[0]}。`;
+      if(p.slice(1).join(' ').trim()) text += p.slice(1).join(' ').trim() + '。';
+    });
+  }
+
+  // 招式
+  if(isPoke && c.attacks){
+    c.attacks.split('|').map(s=>s.trim()).filter(Boolean).forEach(atk=>{
+      const p = atk.split(/\s{2,}/);
+      let aname='', dmg='', eff='';
+      p.forEach(seg=>{
+        if(!aname){aname=seg;return}
+        if(seg.startsWith('(')&&seg.endsWith(')')) return; // 略過能量符號
+        if(/^\d+\+?$/.test(seg)){dmg=seg;return}
+        eff+=(eff?' ':'')+seg;
+      });
+      text += `招式，${aname}`;
+      if(dmg) text += `，傷害 ${dmg}`;
+      text += '。';
+      if(eff) text += eff + '。';
+    });
+  }
+
+  // 效果卡
+  if(isEff && c.attacks){
+    text += `效果，${c.attacks}。`;
+  }
+
+  // 對戰數值
+  if(isPoke){
+    if(c.weakness)     text += `弱點，${c.weakness}。`;
+    if(c.retreat_cost) text += `撤退費用，${c.retreat_cost}。`;
+  }
+
+  // 規則
+  if(c.rules){
+    c.rules.split('|').map(s=>s.trim()).filter(Boolean).forEach(r=>{
+      text += r + '。';
+    });
+  }
+
+  // 建立語音
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-TW';
+  utter.rate = 0.9;   // 稍慢一點，小朋友聽得清楚
+  utter.pitch = 1.1;  // 稍高音調，比較活潑
+
+  // 按鈕動畫
+  const btn = document.getElementById('speakBtn');
+  if(btn){
+    btn.textContent = '⏹ 停止朗讀';
+    btn.onclick = ()=>{ window.speechSynthesis.cancel(); resetSpeakBtn(); };
+  }
+  utter.onend = resetSpeakBtn;
+  utter.onerror = resetSpeakBtn;
+
+  window.speechSynthesis.speak(utter);
+}
+
+function resetSpeakBtn(){
+  const btn = document.getElementById('speakBtn');
+  if(btn){
+    btn.textContent = '🔊 朗讀卡片資訊';
+    btn.onclick = speakCard;
+  }
 }
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
 
