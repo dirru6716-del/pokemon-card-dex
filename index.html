@@ -60,18 +60,19 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 .fg select option{background:var(–bg2)}
 .hp-row{display:grid;grid-template-columns:1fr 12px 1fr;gap:4px;align-items:center}
 .hp-sep{text-align:center;color:var(–text3);font-size:1rem}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{
-padding:4px 10px;border-radius:20px;font-size:.82rem;
+padding:3px 5px;border-radius:8px;font-size:.7rem;
 font-weight:700;cursor:pointer;border:2px solid transparent;
-opacity:.55;transition:all .15s;user-select:none;
-display:flex;align-items:center;gap:4px;
+opacity:.6;transition:all .15s;user-select:none;
+display:flex;flex-direction:column;align-items:center;gap:2px;
+min-width:36px;
 }
 .chip-img{
-width:20px;height:20px;object-fit:contain;flex-shrink:0;
+width:28px;height:28px;object-fit:contain;flex-shrink:0;
 }
-.chip:hover{opacity:.85;transform:scale(1.05)}
-.chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 8px currentColor;transform:scale(1.1)}
+.chip:hover{opacity:.9;transform:scale(1.08)}
+.chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 6px currentColor;transform:scale(1.1);background:rgba(255,255,255,.06)}
 .chip[data-e=“草”]{color:var(–grass);background:rgba(80,192,80,.12)}
 .chip[data-e=“火”]{color:var(–fire);background:rgba(224,96,48,.12)}
 .chip[data-e=“水”]{color:var(–water);background:rgba(48,144,240,.12)}
@@ -80,7 +81,6 @@ width:20px;height:20px;object-fit:contain;flex-shrink:0;
 .chip[data-e=“鬥”]{color:var(–fighting);background:rgba(192,128,48,.12)}
 .chip[data-e=“惡”]{color:var(–dark);background:rgba(112,96,176,.12)}
 .chip[data-e=“鋼”]{color:var(–metal);background:rgba(144,144,176,.12)}
-.chip[data-e=“妖”]{color:var(–fairy);background:rgba(240,128,192,.12)}
 .chip[data-e=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
 .chip[data-e=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
 /* 招式能量 chip（外觀同屬性 chip，用 data-a） */
@@ -515,7 +515,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
           <span class="chip" data-e="鬥"><img src="https://asia.pokemon-card.com/various_images/energy/Fighting.png" class="chip-img">鬥</span>
           <span class="chip" data-e="惡"><img src="https://asia.pokemon-card.com/various_images/energy/Darkness.png" class="chip-img">惡</span>
           <span class="chip" data-e="鋼"><img src="https://asia.pokemon-card.com/various_images/energy/Metal.png" class="chip-img">鋼</span>
-          <span class="chip" data-e="妖"><img src="https://asia.pokemon-card.com/various_images/energy/Fairy.png" class="chip-img">妖</span>
           <span class="chip" data-e="龍"><img src="https://asia.pokemon-card.com/various_images/energy/Dragon.png" class="chip-img">龍</span>
           <span class="chip" data-e="無"><img src="https://asia.pokemon-card.com/various_images/energy/Colorless.png" class="chip-img">無</span>
         </div>
@@ -540,7 +539,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
           <span class="chip chip-atk" data-a="鬥"><img src="https://asia.pokemon-card.com/various_images/energy/Fighting.png" class="chip-img">鬥</span>
           <span class="chip chip-atk" data-a="惡"><img src="https://asia.pokemon-card.com/various_images/energy/Darkness.png" class="chip-img">惡</span>
           <span class="chip chip-atk" data-a="鋼"><img src="https://asia.pokemon-card.com/various_images/energy/Metal.png" class="chip-img">鋼</span>
-          <span class="chip chip-atk" data-a="妖"><img src="https://asia.pokemon-card.com/various_images/energy/Fairy.png" class="chip-img">妖</span>
           <span class="chip chip-atk" data-a="龍"><img src="https://asia.pokemon-card.com/various_images/energy/Dragon.png" class="chip-img">龍</span>
           <span class="chip chip-atk" data-a="無"><img src="https://asia.pokemon-card.com/various_images/energy/Colorless.png" class="chip-img">無</span>
         </div>
