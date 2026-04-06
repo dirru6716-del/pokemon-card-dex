@@ -92,13 +92,23 @@ width:28px;height:28px;object-fit:contain;flex-shrink:0;
 .chip[data-a=“鬥”]{color:var(–fighting);background:rgba(192,128,48,.12)}
 .chip[data-a=“惡”]{color:var(–dark);background:rgba(112,96,176,.12)}
 .chip[data-a=“鋼”]{color:var(–metal);background:rgba(144,144,176,.12)}
-.chip[data-a=“妖”]{color:var(–fairy);background:rgba(240,128,192,.12)}
 .chip[data-a=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
 .chip[data-a=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
 .btn-search{margin:10px;flex-shrink:0;padding:10px;background:#3060e0;background:linear-gradient(135deg,#3060e0,#1840b0);border:none;border-radius:8px;color:#fff;font-family:‘Orbitron’,sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px rgba(48,96,224,.35)}
 .btn-search:hover{opacity:.9;transform:translateY(-1px)}
 .btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:#1a2340;border:1px solid #2a3a64;border-radius:8px;color:#7888b8;font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
 .btn-reset:hover{border-color:#e03040;color:#e03040}
+
+/* 特性篩選按鈕 */
+.ability-tab{
+flex:1;padding:7px 6px;border-radius:6px;
+border:1px solid #2a3a64;background:#0f1526;
+color:#7888b8;font-size:.82rem;cursor:pointer;
+font-family:‘Zen Kaku Gothic New’,sans-serif;
+transition:all .15s;text-align:center;
+}
+.ability-tab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
+.ability-tab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
 
 /* ── CENTER ── */
 .center{display:flex;flex-direction:column;overflow:hidden;background:var(–bg)}
@@ -527,7 +537,18 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
           <input type="number" id="fHpMax" placeholder="最大" min="0"/>
         </div>
       </div>
-      <div class="fg"><label>招式 / 效果關鍵字</label><input type="text" id="fEff" placeholder="效果文字搜尋…"/></div>
+      <div class="fg">
+        <label>招式 / 效果關鍵字</label>
+        <input type="text" id="fEff" placeholder="多個關鍵字用 | 分隔，例如：抽牌|丟棄"/>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px">多關鍵字用 <b style="color:#d8e0f8">|</b> 分隔（OR 搜尋）</div>
+      </div>
+      <div class="fg">
+        <label>特性</label>
+        <div style="display:flex;gap:6px">
+          <button class="ability-tab on" id="abilityAll" onclick="setAbilityFilter('all')">不限制</button>
+          <button class="ability-tab" id="abilityOnly" onclick="setAbilityFilter('only')">僅有特性</button>
+        </div>
+      </div>
       <div class="fg">
         <label>招式能量</label>
         <div class="chips" id="atkEnergyChips">
@@ -660,6 +681,14 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1B
 let ALL=[], FILTERED=[], SEL=null;
 const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
 const ACTIVE_ATK_ENERGY = new Set();  // 招式能量篩選
+let abilityFilter = 'all';  // 'all' | 'only'
+
+function setAbilityFilter(val){
+  abilityFilter = val;
+  document.getElementById('abilityAll').classList.toggle('on',  val==='all');
+  document.getElementById('abilityOnly').classList.toggle('on', val==='only');
+  doSearch();
+}
 const PAGE_SIZE_DESKTOP = 20;
 const PAGE_SIZE_MOBILE  = 18;  // ★ 3 的倍數，確保每頁剛好 3 欄整列
 let curPage = 1;
@@ -818,7 +847,15 @@ function doSearch(){
       const hasAll = [...ACTIVE_ATK_ENERGY].every(e=>allCosts.includes(e));
       if(!hasAll)return false;
     }
-    if(eff&&!((c.abilities||'')+(c.attacks||'')).toLowerCase().includes(eff))return false;
+    // 特性篩選
+    if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
+    // 招式/效果多關鍵字（用 | 分隔，OR 搜尋）
+    if(eff){
+      const keywords = eff.split('|').map(k=>k.trim()).filter(Boolean);
+      const haystack = ((c.abilities||'')+(c.attacks||'')).toLowerCase();
+      const matched  = keywords.some(k=> haystack.includes(k));
+      if(!matched) return false;
+    }
     return true;
   });
   curPage=1;applySort();
@@ -1152,6 +1189,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  setAbilityFilter('all');
   curPage=1;doSearch();
 });
 
