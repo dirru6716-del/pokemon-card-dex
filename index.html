@@ -190,6 +190,16 @@ content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
 .rule-block{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #f0c040;border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:6px;font-size:.88rem;color:#aab0cc;line-height:1.65}
 .no-detail{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#404870;gap:10px;font-size:1rem}
 
+/* ★ 官方連結 */
+.official-link{
+display:flex;align-items:center;gap:8px;
+padding:10px 14px;border-radius:8px;
+background:#0f1526;border:1px solid #2a3a64;
+color:#7888b8;font-size:.88rem;
+text-decoration:none;transition:all .15s;
+}
+.official-link:hover{border-color:#3060e0;color:#d8e0f8;background:#141b30}
+
 /* ★ 語音朗讀按鈕 */
 .btn-speak{
 width:100%;padding:18px;
@@ -1077,6 +1087,21 @@ function renderDetail(c){
     </div>`;
   }
 
+  // ★ 官方連結
+  if(c.card_id){
+    html += `<div class="dsec">
+      <div class="dsec-hdr">官方連結 OFFICIAL</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+        <a class="official-link" href="https://asia.pokemon-card.com/tw/card-search/detail/${c.card_id}/" target="_blank">
+          🇹🇼 台灣官方頁面
+        </a>
+        <a class="official-link" href="https://www.pokemon-card.com/card-search/details.html/card/${c.card_id}/" target="_blank">
+          🇯🇵 日本官方頁面
+        </a>
+      </div>
+    </div>`;
+  }
+
   // ★ 語音朗讀按鈕
   html += `<div style="margin-top:16px;padding-bottom:20px">
     <button class="btn-speak" id="speakBtn" onclick="speakCard()">
@@ -1091,58 +1116,56 @@ function renderDetail(c){
   if(isPoke) renderEvolution(c);
 }
 
-// ─── 進化鏈（fetch 官方頁面，背景載入不阻塞）────────────
+// ─── 進化鏈 fetch ────────────────────────────────────────
 async function renderEvolution(c){
   const el = document.getElementById('evoContent');
   if(!el) return;
   el.innerHTML = '<span style="color:#404870;font-size:.78rem">載入中…</span>';
 
   try{
-    const url = `https://asia.pokemon-card.com/tw/card-search/detail/${c.card_id}/`;
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    const resp = await fetch(proxyUrl, {signal: AbortSignal.timeout(8000)});
-    if(!resp.ok) throw new Error('網路錯誤');
-    const html = await resp.text();
-    const doc  = new DOMParser().parseFromString(html, 'text/html');
+    const detailUrl = `https://asia.pokemon-card.com/tw/card-search/detail/${c.card_id}/`;
+    const proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(detailUrl);
+    const resp = await fetch(proxyUrl);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const rawHtml = await resp.text();
 
-    // 找 <h3>進化</h3> 後的 <ul>
-    const h3List = [...doc.querySelectorAll('h3')];
-    const evoH3  = h3List.find(h=>h.textContent.trim()==='進化');
-    if(!evoH3) throw new Error('無進化鏈');
+    // 直接用 regex 從 HTML 原始碼抓進化鏈區塊
+    // 進化區塊格式：<h3>進化</h3> 後面的 <ul>...</ul>
+    const evoBlockMatch = rawHtml.match(/<h3[^>]*>進化<\/h3>([\s\S]*?)<h3/);
+    if(!evoBlockMatch) throw new Error('無進化鏈');
 
-    const ul = evoH3.nextElementSibling;
-    if(!ul || ul.tagName !== 'UL') throw new Error('無進化鏈');
+    const evoBlock = evoBlockMatch[1];
 
-    // 從 keyword 參數取出所有進化名稱
+    // 從 keyword= 參數抓名稱（URL decode）
     const names = [];
-    ul.querySelectorAll('a[href*="keyword="]').forEach(a=>{
-      const m = a.href.match(/keyword=([^&]+)/);
-      if(m){
-        const name = decodeURIComponent(m[1]);
-        if(!names.includes(name)) names.push(name);
-      }
-    });
+    const re = /keyword=([^&"]+)/g;
+    let m;
+    while((m = re.exec(evoBlock)) !== null){
+      const name = decodeURIComponent(m[1]);
+      if(!names.includes(name)) names.push(name);
+    }
 
-    if(!names.length) throw new Error('無進化鏈');
+    if(!names.length) throw new Error('無進化名稱');
 
-    // 確認 evoContent 還在（使用者可能已切換其他卡）
+    // 確認 el 還存在（使用者可能已切換卡片）
     const evoEl = document.getElementById('evoContent');
     if(!evoEl) return;
 
-    // 對每個名稱在 CSV 裡找第一筆，生成連結
-    const links = names.map(name=>{
-      const card = ALL.find(a=>a.name===name);
-      const isSelf = name === c.name;
+    // 對每個名稱生成連結
+    const parts = names.map(name=>{
+      const isSelf = (name === c.name);
+      // CSV 裡找第一筆同名卡
+      const found = ALL.find(a => a.name === name);
       if(isSelf){
         return `<span style="color:#f0c040;font-weight:700">▶ ${esc(name)}</span>`;
-      } else if(card){
-        return `<a class="evo-link" onclick="selectCard(ALL.find(x=>x.card_id==='${card.card_id}'),null)">${esc(name)}</a>`;
+      } else if(found){
+        return `<a class="evo-link" onclick="selectCard(ALL.find(x=>x.card_id==='${found.card_id}'),null)">${esc(name)}</a>`;
       } else {
         return `<span style="color:#404870">${esc(name)}</span>`;
       }
     });
 
-    evoEl.innerHTML = links.join('<span style="color:#404870"> → </span>');
+    evoEl.innerHTML = parts.join(' <span style="color:#404870">→</span> ');
 
   } catch(e){
     const evoEl = document.getElementById('evoContent');
