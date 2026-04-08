@@ -1093,11 +1093,11 @@ function renderDetail(c){
   }
   if(!html.includes('dsec'))html='<div class="no-detail"><span>此卡牌無詳細資訊</span></div>';
 
-  // ★ 進化鏈區塊（非寶可夢卡不顯示）
+  // ★ 進化鏈（寶可夢卡才顯示，用本地 CSV 比對，不需要 fetch）
   if(isPoke){
     html += `<div class="dsec" id="evoSection">
       <div class="dsec-hdr">進化鏈 EVOLUTION</div>
-      <div id="evoContent" style="color:#404870;font-size:.78rem">載入中…</div>
+      <div id="evoContent"></div>
     </div>`;
   }
 
@@ -1109,76 +1109,57 @@ function renderDetail(c){
   </div>`;
 
   document.getElementById('dbody').innerHTML = html;
-
-  // 儲存當前卡片供語音使用
   window._speakCard = c;
 
-  // 非同步載入進化鏈
-  if(isPoke && c.card_id) fetchEvolution(c.card_id);
+  // 進化鏈：用名稱推斷同族群（本地 CSV，不需網路）
+  if(isPoke) renderEvolution(c);
 }
 
-// ─── 進化鏈 fetch ────────────────────────────────────────
-async function fetchEvolution(card_id){
-  const evoEl = document.getElementById('evoContent');
-  if(!evoEl) return;
+// ─── 進化鏈（本地 CSV 比對）────────────────────────────
+function renderEvolution(c){
+  const el = document.getElementById('evoContent');
+  if(!el) return;
 
-  try{
-    const url = `https://asia.pokemon-card.com/tw/card-search/detail/${card_id}/`;
-    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-    const resp = await fetch(proxyUrl);
-    if(!resp.ok) throw new Error('fetch failed');
-    const html = await resp.text();
-    const doc  = new DOMParser().parseFromString(html, 'text/html');
+  // 取得進化基礎名稱：去掉 ex/V/VMAX/VSTAR/GX/+/◇ 等後綴
+  const baseName = (c.name||'')
+    .replace(/\s*(ex|EX|V-UNION|VMAX|VSTAR|VUNION|GX|V)\s*$/,'')
+    .replace(/[◇+＋]/g,'')
+    .trim();
 
-    // 找進化鏈：<h3>進化</h3> 後的 <ul>
-    const evoH3 = [...doc.querySelectorAll('h3')].find(h=>h.textContent.trim()==='進化');
-    if(!evoH3){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
+  if(!baseName){ el.innerHTML='<span style="color:#404870">—</span>'; return; }
 
-    const ul = evoH3.nextElementSibling;
-    if(!ul){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
+  // 在 CSV 裡找名稱包含 baseName 的所有寶可夢卡（排除自己）
+  const related = ALL.filter(card=>{
+    if(!POKE_T.has(card.card_type)) return false;
+    const n = card.name || '';
+    // 名稱包含基礎名，或基礎名包含該卡名（處理前置進化，如鐵殼蛹→大針蜂）
+    return n.includes(baseName) || baseName.includes(
+      n.replace(/\s*(ex|EX|V-UNION|VMAX|VSTAR|VUNION|GX|V)\s*$/,'').trim()
+    );
+  });
 
-    // 抓所有進化名稱（從 keyword 參數）
-    const names = [];
-    ul.querySelectorAll('a[href*="keyword="]').forEach(a=>{
-      const m = a.href.match(/keyword=([^&]+)/);
-      if(m) names.push(decodeURIComponent(m[1]));
-    });
+  // 去重（同名只留一筆）
+  const seen = new Set();
+  const unique = related.filter(card=>{
+    if(seen.has(card.name)) return false;
+    seen.add(card.name);
+    return true;
+  });
 
-    if(!names.length){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
-
-    // 在 CSV 裡找每個名稱對應的所有卡，去重取最新一筆
-    const evoCards = [];
-    names.forEach(name=>{
-      const matches = ALL.filter(c=> c.name === name);
-      // 每個名稱只取一張（最後一筆，通常是最新版本）
-      if(matches.length) evoCards.push(matches[matches.length-1]);
-    });
-
-    if(!evoCards.length){ evoEl.innerHTML='<span style="color:#404870">CSV 中找不到相關卡牌</span>'; return; }
-
-    // 渲染進化鏈卡片列
-    let html = '<div class="evo-chain">';
-    evoCards.forEach((card, i)=>{
-      const src = card.image_url || '';
-      html += `
-        <div class="evo-item" onclick="selectCard(ALL.find(c=>c.card_id==='${card.card_id}'), null)" title="${esc(card.name)}">
-          ${src
-            ? `<img class="evo-thumb" src="${src}"
-                onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${src}')+'&w=120&output=jpg'">`
-            : `<div class="evo-thumb evo-noimg">${esc(card.name)}</div>`
-          }
-          <div class="evo-name">${esc(card.name)}</div>
-        </div>
-        ${i < evoCards.length-1 ? '<div class="evo-arrow">▶</div>' : ''}
-      `;
-    });
-    html += '</div>';
-    evoEl.innerHTML = html;
-
-  } catch(e){
-    if(document.getElementById('evoContent'))
-      document.getElementById('evoContent').innerHTML = '<span style="color:#404870">進化鏈載入失敗</span>';
+  if(!unique.length){
+    el.innerHTML='<span style="color:#404870">找不到相關進化卡牌</span>';
+    return;
   }
+
+  // 用文字超連結顯示
+  const links = unique.map(card=>{
+    const isSelf = card.card_id === c.card_id;
+    return isSelf
+      ? `<span style="color:#f0c040;font-weight:700">▶ ${esc(card.name)}</span>`
+      : `<a class="evo-link" onclick="selectCard(ALL.find(c=>c.card_id==='${card.card_id}'),null)">${esc(card.name)}</a>`;
+  });
+
+  el.innerHTML = links.join('<span style="color:#404870"> ／ </span>');
 }
 
 function speakCard(){
