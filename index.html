@@ -203,6 +203,38 @@ transition:opacity .15s,transform .1s;
 letter-spacing:2px;
 }
 
+/* ★ 進化鏈 */
+.evo-chain{
+display:flex;align-items:center;flex-wrap:wrap;gap:6px;
+padding:6px 0;
+}
+.evo-item{
+display:flex;flex-direction:column;align-items:center;
+gap:4px;cursor:pointer;
+transition:transform .15s;
+}
+.evo-item:hover{transform:scale(1.08)}
+.evo-thumb{
+width:64px;height:90px;
+object-fit:cover;border-radius:6px;
+border:2px solid #1f2b4a;
+background:#0f1526;display:block;
+transition:border-color .15s;
+}
+.evo-item:hover .evo-thumb{border-color:#f0c040}
+.evo-noimg{
+display:flex;align-items:center;justify-content:center;
+font-size:.5rem;color:#7888b8;padding:4px;text-align:center;
+}
+.evo-name{
+font-size:.65rem;color:#7888b8;text-align:center;
+max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.evo-arrow{
+color:#404870;font-size:.9rem;align-self:center;
+margin-bottom:16px;
+}
+
 /* ── 切換按鈕 ── */
 .btn-mode{
 margin-left:10px;padding:4px 12px;
@@ -1061,6 +1093,14 @@ function renderDetail(c){
   }
   if(!html.includes('dsec'))html='<div class="no-detail"><span>此卡牌無詳細資訊</span></div>';
 
+  // ★ 進化鏈區塊（非寶可夢卡不顯示）
+  if(isPoke){
+    html += `<div class="dsec" id="evoSection">
+      <div class="dsec-hdr">進化鏈 EVOLUTION</div>
+      <div id="evoContent" style="color:#404870;font-size:.78rem">載入中…</div>
+    </div>`;
+  }
+
   // ★ 語音朗讀按鈕
   html += `<div style="margin-top:16px;padding-bottom:20px">
     <button class="btn-speak" id="speakBtn" onclick="speakCard()">
@@ -1072,6 +1112,73 @@ function renderDetail(c){
 
   // 儲存當前卡片供語音使用
   window._speakCard = c;
+
+  // 非同步載入進化鏈
+  if(isPoke && c.card_id) fetchEvolution(c.card_id);
+}
+
+// ─── 進化鏈 fetch ────────────────────────────────────────
+async function fetchEvolution(card_id){
+  const evoEl = document.getElementById('evoContent');
+  if(!evoEl) return;
+
+  try{
+    const url = `https://asia.pokemon-card.com/tw/card-search/detail/${card_id}/`;
+    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+    const resp = await fetch(proxyUrl);
+    if(!resp.ok) throw new Error('fetch failed');
+    const html = await resp.text();
+    const doc  = new DOMParser().parseFromString(html, 'text/html');
+
+    // 找進化鏈：<h3>進化</h3> 後的 <ul>
+    const evoH3 = [...doc.querySelectorAll('h3')].find(h=>h.textContent.trim()==='進化');
+    if(!evoH3){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
+
+    const ul = evoH3.nextElementSibling;
+    if(!ul){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
+
+    // 抓所有進化名稱（從 keyword 參數）
+    const names = [];
+    ul.querySelectorAll('a[href*="keyword="]').forEach(a=>{
+      const m = a.href.match(/keyword=([^&]+)/);
+      if(m) names.push(decodeURIComponent(m[1]));
+    });
+
+    if(!names.length){ evoEl.innerHTML='<span style="color:#404870">無進化鏈資料</span>'; return; }
+
+    // 在 CSV 裡找每個名稱對應的所有卡，去重取最新一筆
+    const evoCards = [];
+    names.forEach(name=>{
+      const matches = ALL.filter(c=> c.name === name);
+      // 每個名稱只取一張（最後一筆，通常是最新版本）
+      if(matches.length) evoCards.push(matches[matches.length-1]);
+    });
+
+    if(!evoCards.length){ evoEl.innerHTML='<span style="color:#404870">CSV 中找不到相關卡牌</span>'; return; }
+
+    // 渲染進化鏈卡片列
+    let html = '<div class="evo-chain">';
+    evoCards.forEach((card, i)=>{
+      const src = card.image_url || '';
+      html += `
+        <div class="evo-item" onclick="selectCard(ALL.find(c=>c.card_id==='${card.card_id}'), null)" title="${esc(card.name)}">
+          ${src
+            ? `<img class="evo-thumb" src="${src}"
+                onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${src}')+'&w=120&output=jpg'">`
+            : `<div class="evo-thumb evo-noimg">${esc(card.name)}</div>`
+          }
+          <div class="evo-name">${esc(card.name)}</div>
+        </div>
+        ${i < evoCards.length-1 ? '<div class="evo-arrow">▶</div>' : ''}
+      `;
+    });
+    html += '</div>';
+    evoEl.innerHTML = html;
+
+  } catch(e){
+    if(document.getElementById('evoContent'))
+      document.getElementById('evoContent').innerHTML = '<span style="color:#404870">進化鏈載入失敗</span>';
+  }
 }
 
 function speakCard(){
@@ -1645,6 +1752,7 @@ document.getElementById('floatResetBtn').addEventListener('click', ()=>{
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  setAbilityFilter('all');
   curPage=1;
   doSearch();
   document.body.scrollTo({top:0, behavior:'smooth'});
