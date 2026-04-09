@@ -882,12 +882,17 @@ function doSearch(){
     }
     // 特性篩選
     if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
-    // ACE SPEC 篩選：只看 rules 欄位（ACE SPEC 規則文字）
+    // ACE SPEC 篩選：用硬編碼名單比對
     if(aceFilter==='only'){
-      const r = (c.rules||'');
-      // 規則文字包含 ACE SPEC 相關字樣（中英文都找）
-      const isAce = r.includes('ACE SPEC') || r.includes('ace spec') || r.includes('ACE　SPEC');
-      if(!isAce) return false;
+      const ACE_NAMES = new Set([
+        '覺醒之鼓','英雄斗篷','大師球','極限腰帶','頂尖捕捉器',
+        '重新啟動箱','高級香氛','寶可夢旋風回收機','秘密箱','生存護腕',
+        '不公印章','危險光線','中立中心','寶可夢活力 A','豪華炸彈',
+        '壯偉碩木','閃耀水晶','希望護符','完全體攪拌器','能量搜尋 Pro',
+        '百萬噸鼓風機','奇蹟耳機','貴重手推車','急進開關','釣竿MAX',
+        '璀璨結晶','珍寶配件',
+      ]);
+      if(!ACE_NAMES.has(c.name)) return false;
     }
     // 招式/效果多關鍵字（用 | 分隔，OR 搜尋）
     if(eff){
