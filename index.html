@@ -109,6 +109,7 @@ transition:all .15s;text-align:center;
 }
 .ability-tab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
 .ability-tab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
+.ability-tab.ace-on.on{background:linear-gradient(135deg,#c03060,#6030a0);border-color:#c03060}
 
 /* ── CENTER ── */
 .center{display:flex;flex-direction:column;overflow:hidden;background:var(–bg)}
@@ -565,6 +566,13 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         <div style="display:flex;gap:6px">
           <button class="ability-tab on" id="abilityAll" onclick="setAbilityFilter('all')">不限制</button>
           <button class="ability-tab" id="abilityOnly" onclick="setAbilityFilter('only')">僅有特性</button>
+        </div>
+      </div>
+      <div class="fg">
+        <label>ACE SPEC</label>
+        <div style="display:flex;gap:6px">
+          <button class="ability-tab on" id="aceAll" onclick="setAceFilter('all')">不限制</button>
+          <button class="ability-tab ace-on" id="aceOnly" onclick="setAceFilter('only')">僅 ACE SPEC</button>
         </div>
       </div>
       <div class="fg">
