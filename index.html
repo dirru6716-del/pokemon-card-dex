@@ -109,7 +109,6 @@ transition:all .15s;text-align:center;
 }
 .ability-tab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
 .ability-tab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
-.ability-tab.ace-on.on{background:linear-gradient(135deg,#c03060,#6030a0);border-color:#c03060}
 
 /* ── CENTER ── */
 .center{display:flex;flex-direction:column;overflow:hidden;background:var(–bg)}
@@ -572,7 +571,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         <label>ACE SPEC</label>
         <div style="display:flex;gap:6px">
           <button class="ability-tab on" id="aceAll" onclick="setAceFilter('all')">不限制</button>
-          <button class="ability-tab ace-on" id="aceOnly" onclick="setAceFilter('only')">僅 ACE SPEC</button>
+          <button class="ability-tab" id="aceOnly" onclick="setAceFilter('only')">僅 ACE SPEC</button>
         </div>
       </div>
       <div class="fg">
@@ -708,11 +707,19 @@ let ALL=[], FILTERED=[], SEL=null;
 const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
 const ACTIVE_ATK_ENERGY = new Set();  // 招式能量篩選
 let abilityFilter = 'all';  // 'all' | 'only'
+let aceFilter     = 'all';  // 'all' | 'only'
 
 function setAbilityFilter(val){
   abilityFilter = val;
   document.getElementById('abilityAll').classList.toggle('on',  val==='all');
   document.getElementById('abilityOnly').classList.toggle('on', val==='only');
+  doSearch();
+}
+
+function setAceFilter(val){
+  aceFilter = val;
+  document.getElementById('aceAll').classList.toggle('on',  val==='all');
+  document.getElementById('aceOnly').classList.toggle('on', val==='only');
   doSearch();
 }
 const PAGE_SIZE_DESKTOP = 20;
@@ -875,6 +882,12 @@ function doSearch(){
     }
     // 特性篩選
     if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
+    // ACE SPEC 篩選
+    if(aceFilter==='only'){
+      const r = (c.rules||'').toLowerCase();
+      const a = (c.attacks||'').toLowerCase();
+      if(!r.includes('ace spec') && !a.includes('ace spec')) return false;
+    }
     // 招式/效果多關鍵字（用 | 分隔，OR 搜尋）
     if(eff){
       const keywords = eff.split('|').map(k=>k.trim()).filter(Boolean);
@@ -1297,6 +1310,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   setAbilityFilter('all');
+  setAceFilter('all');
   curPage=1;doSearch();
 });
 
@@ -1753,6 +1767,7 @@ document.getElementById('floatResetBtn').addEventListener('click', ()=>{
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   setAbilityFilter('all');
+  setAceFilter('all');
   curPage=1;
   doSearch();
   document.body.scrollTo({top:0, behavior:'smooth'});
