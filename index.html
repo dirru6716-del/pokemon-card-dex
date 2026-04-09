@@ -882,11 +882,12 @@ function doSearch(){
     }
     // 特性篩選
     if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
-    // ACE SPEC 篩選
+    // ACE SPEC 篩選：只看 rules 欄位（ACE SPEC 規則文字）
     if(aceFilter==='only'){
-      const r = (c.rules||'').toLowerCase();
-      const a = (c.attacks||'').toLowerCase();
-      if(!r.includes('ace spec') && !a.includes('ace spec')) return false;
+      const r = (c.rules||'');
+      // 規則文字包含 ACE SPEC 相關字樣（中英文都找）
+      const isAce = r.includes('ACE SPEC') || r.includes('ace spec') || r.includes('ACE　SPEC');
+      if(!isAce) return false;
     }
     // 招式/效果多關鍵字（用 | 分隔，OR 搜尋）
     if(eff){
