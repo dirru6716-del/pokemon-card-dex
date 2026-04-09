@@ -528,7 +528,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   <aside class="left">
     <div class="panel-hdr" id="filterHdr">▸ FILTER</div>
     <div class="filters" id="filtersPanel">
-      <div class="fg"><label>名稱</label><input type="text" id="fName" placeholder="輸入卡牌名稱…"/></div>
+      <div class="fg"><label>名稱 / 卡號</label><input type="text" id="fName" placeholder="名稱 或 卡號（如 #071/083）"/></div>
       <div class="fg"><label>卡片類型</label><select id="fType"><option value="">全部</option></select></div>
       <div class="fg"><label>擴充包</label><select id="fSet"><option value="">全部</option></select></div>
       <div class="fg"><label>規範標記</label><select id="fReg"><option value="">全部</option></select></div>
@@ -862,7 +862,13 @@ function doSearch(){
   const hpMax=parseInt(document.getElementById('fHpMax').value)||Infinity;
   const eff  =document.getElementById('fEff').value.trim().toLowerCase();
   FILTERED=ALL.filter(c=>{
-    if(name&&!(c.name||'').toLowerCase().includes(name))return false;
+    if(name){
+      // 去掉開頭的 # 符號，同時比對名稱和卡號
+      const q = name.replace(/^#/,'');
+      const nameMatch   = (c.name||'').toLowerCase().includes(q);
+      const numberMatch = (c.card_number||'').toLowerCase().includes(q);
+      if(!nameMatch && !numberMatch) return false;
+    }
     if(type&&c.card_type!==type)return false;
     if(set&&c.set_name!==set)return false;
     if(reg&&c.regulation!==reg)return false;
