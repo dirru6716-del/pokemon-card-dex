@@ -575,11 +575,14 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         </div>
       </div>
       <div class="fg">
-        <label>規則文字</label>
-        <div style="display:flex;gap:6px">
-          <button class="ability-tab on" id="rulesAll"  onclick="setRulesFilter('all')">不限制</button>
-          <button class="ability-tab"    id="rulesNone" onclick="setRulesFilter('none')">無規則</button>
-          <button class="ability-tab"    id="rulesHas"  onclick="setRulesFilter('has')">有規則</button>
+        <label>卡片規則</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <button class="ability-tab on" id="ruleAll"  onclick="setRuleFilter('all')">不限制</button>
+          <button class="ability-tab" id="ruleEx"   onclick="setRuleFilter('ex')">ex</button>
+          <button class="ability-tab" id="ruleVmax" onclick="setRuleFilter('vmax')">VMAX</button>
+          <button class="ability-tab" id="ruleVstar" onclick="setRuleFilter('vstar')">VSTAR</button>
+          <button class="ability-tab" id="ruleGx"   onclick="setRuleFilter('gx')">GX</button>
+          <button class="ability-tab" id="ruleNone" onclick="setRuleFilter('none')">一般卡</button>
         </div>
       </div>
       <div class="fg">
@@ -715,28 +718,27 @@ let ALL=[], FILTERED=[], SEL=null;
 const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
 const ACTIVE_ATK_ENERGY = new Set();  // 招式能量篩選
 let abilityFilter = 'all';  // 'all' | 'only'
-let aceFilter     = 'all';  // 'all' | 'only'
-let rulesFilter   = 'all';  // 'all' | 'none' | 'has'
+let aceFilter  = 'all';
+let ruleFilter = 'all';  // 'all'|'ex'|'vmax'|'vstar'|'gx'|'none'
 
 function setAbilityFilter(val){
   abilityFilter = val;
-  document.getElementById('abilityAll').classList.toggle('on',  val==='all');
+  document.getElementById('abilityAll').classList.toggle('on', val==='all');
   document.getElementById('abilityOnly').classList.toggle('on', val==='only');
   doSearch();
 }
-
 function setAceFilter(val){
   aceFilter = val;
-  document.getElementById('aceAll').classList.toggle('on',  val==='all');
+  document.getElementById('aceAll').classList.toggle('on', val==='all');
   document.getElementById('aceOnly').classList.toggle('on', val==='only');
   doSearch();
 }
-
-function setRulesFilter(val){
-  rulesFilter = val;
-  document.getElementById('rulesAll').classList.toggle('on',  val==='all');
-  document.getElementById('rulesNone').classList.toggle('on', val==='none');
-  document.getElementById('rulesHas').classList.toggle('on',  val==='has');
+function setRuleFilter(val){
+  ruleFilter = val;
+  ['all','ex','vmax','vstar','gx','none'].forEach(k=>{
+    document.getElementById('rule'+k.charAt(0).toUpperCase()+k.slice(1))
+      ?.classList.toggle('on', val===k);
+  });
   doSearch();
 }
 const PAGE_SIZE_DESKTOP = 20;
@@ -905,9 +907,20 @@ function doSearch(){
     }
     // 特性篩選
     if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
-    // 規則文字篩選
-    if(rulesFilter==='has'  && !(c.rules||'').trim()) return false;
-    if(rulesFilter==='none' &&  (c.rules||'').trim()) return false;
+    // 卡片規則篩選（依名稱後綴判斷）
+    if(ruleFilter !== 'all'){
+      const n = (c.name||'');
+      const hasEx   = /ex$/i.test(n);
+      const hasVmax = /VMAX$/i.test(n);
+      const hasVstar= /VSTAR$/i.test(n);
+      const hasGx   = /GX$/i.test(n);
+      const hasRule = hasEx || hasVmax || hasVstar || hasGx;
+      if(ruleFilter==='ex'   && !hasEx)   return false;
+      if(ruleFilter==='vmax' && !hasVmax) return false;
+      if(ruleFilter==='vstar'&& !hasVstar)return false;
+      if(ruleFilter==='gx'   && !hasGx)  return false;
+      if(ruleFilter==='none' && hasRule)  return false;
+    }
     if(aceFilter==='only'){
       const ACE_NAMES = new Set([
         '覺醒之鼓','英雄斗篷','大師球','極限腰帶','頂尖捕捉器',
@@ -1342,7 +1355,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   setAbilityFilter('all');
   setAceFilter('all');
-  setRulesFilter('all');
+  setRuleFilter('all');
   curPage=1;doSearch();
 });
 
@@ -1800,7 +1813,7 @@ document.getElementById('floatResetBtn').addEventListener('click', ()=>{
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   setAbilityFilter('all');
   setAceFilter('all');
-  setRulesFilter('all');
+  setRuleFilter('all');
   curPage=1;
   doSearch();
   document.body.scrollTo({top:0, behavior:'smooth'});
