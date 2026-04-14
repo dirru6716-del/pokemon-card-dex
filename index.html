@@ -747,8 +747,9 @@ function setRuleFilter(val){
   doSearch();
 }
 const PAGE_SIZE_DESKTOP = 20;
-const PAGE_SIZE_MOBILE  = 18;  // ★ 3 的倍數，確保每頁剛好 3 欄整列
+const PAGE_SIZE_MOBILE  = 18;
 let curPage = 1;
+let isMobile = window.innerWidth < 768;  // ★ 提前宣告，避免 getPageSize 使用時未定義
 
 function getPageSize(){ return isMobile ? PAGE_SIZE_MOBILE : PAGE_SIZE_DESKTOP; }
 
@@ -1763,7 +1764,7 @@ document.getElementById('deckBack').addEventListener('click',()=>{
 const modeBtn    = document.getElementById('modeBtn');
 const filterHdr  = document.getElementById('filterHdr');
 const filtersPnl = document.getElementById('filtersPanel');
-let   isMobile   = window.innerWidth < 768;
+// isMobile 已在上方宣告
 
 function applyMode(){
   if(isMobile){
