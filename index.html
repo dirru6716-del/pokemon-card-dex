@@ -1359,6 +1359,14 @@ document.querySelectorAll('.chip').forEach(chip=>{
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
   ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ACTIVE_TYPES.clear();
+  ACTIVE_ATK_ENERGY.clear();
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  setAbilityFilter('all');
+  setAceFilter('all');
+  setRuleFilter('all');
+  curPage=1;doSearch();
+});
 
 // ─── 牌組查詢 ────────────────────────────────────────────
 const PROXY = 'https://corsproxy.io/?';
