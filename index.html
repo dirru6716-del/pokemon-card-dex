@@ -885,8 +885,10 @@ function doSearch(){
   const reg  =document.getElementById('fReg').value;
   const hpMin=parseInt(document.getElementById('fHpMin').value)||0;
   const hpMax=parseInt(document.getElementById('fHpMax').value)||Infinity;
-  const dmgMin=parseInt(document.getElementById('fDmgMin').value)||0;
-  const dmgMax=parseInt(document.getElementById('fDmgMax').value)||Infinity;
+  const dmgMinRaw = document.getElementById('fDmgMin').value.trim();
+  const dmgMaxRaw = document.getElementById('fDmgMax').value.trim();
+  const dmgMin = dmgMinRaw !== '' ? parseInt(dmgMinRaw) : null;
+  const dmgMax = dmgMaxRaw !== '' ? parseInt(dmgMaxRaw) : null;
   const eff  =document.getElementById('fEff').value.trim().toLowerCase();
   FILTERED=ALL.filter(c=>{
     if(name){
@@ -901,13 +903,17 @@ function doSearch(){
     if(reg&&c.regulation!==reg)return false;
     const hp=parseInt(c.hp)||0;
     if(hp<hpMin||hp>hpMax)return false;
-    // 招式威力篩選：attacks 裡找所有純數字片段（傷害值）
-    if(dmgMin>0||dmgMax<Infinity){
+    // 招式威力篩選
+    if(dmgMin !== null || dmgMax !== null){
       const atks = (c.attacks||'');
-      // 找所有 \d+ 開頭結尾的數字（傷害值，排除括號內的能量數字）
+      // 找所有傷害數字（2位數以上），若沒有任何數字代表傷害為 0
       const dmgs = [...atks.matchAll(/\s(\d{2,})\+?\s/g)].map(m=>parseInt(m[1]));
-      // 至少有一個招式的傷害在範圍內
-      const inRange = dmgs.some(d=> d>=dmgMin && d<=dmgMax);
+      // 若 attacks 有內容但沒有傷害數字，代表傷害為 0
+      const effectiveDmgs = dmgs.length > 0 ? dmgs : (atks.trim() ? [0] : []);
+      if(!effectiveDmgs.length) return false;
+      const lo = dmgMin ?? 0;
+      const hi = dmgMax ?? Infinity;
+      const inRange = effectiveDmgs.some(d=> d>=lo && d<=hi);
       if(!inRange) return false;
     }
     // 寶可夢本身屬性篩選
