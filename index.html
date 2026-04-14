@@ -556,6 +556,15 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         </div>
       </div>
       <div class="fg">
+        <label>招式威力</label>
+        <div class="hp-row">
+          <input type="number" id="fDmgMin" placeholder="最小" min="0"/>
+          <span class="hp-sep">～</span>
+          <input type="number" id="fDmgMax" placeholder="最大" min="0"/>
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px">搜尋招式傷害值範圍</div>
+      </div>
+      <div class="fg">
         <label>招式 / 效果關鍵字</label>
         <input type="text" id="fEff" placeholder="多個關鍵字用 | 分隔，例如：抽牌|丟棄"/>
         <div style="font-size:.68rem;color:var(--text3);margin-top:3px">多關鍵字用 <b style="color:#d8e0f8">|</b> 分隔（OR 搜尋）</div>
@@ -578,7 +587,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         <label>卡片規則</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           <button class="ability-tab on" id="ruleAll"  onclick="setRuleFilter('all')">不限制</button>
-          <button class="ability-tab" id="ruleEx"   onclick="setRuleFilter('ex')">ex卡</button>
+          <button class="ability-tab" id="ruleEx"   onclick="setRuleFilter('ex')">EX卡</button>
           <button class="ability-tab" id="ruleNone" onclick="setRuleFilter('none')">一般卡</button>
         </div>
       </div>
@@ -875,6 +884,8 @@ function doSearch(){
   const reg  =document.getElementById('fReg').value;
   const hpMin=parseInt(document.getElementById('fHpMin').value)||0;
   const hpMax=parseInt(document.getElementById('fHpMax').value)||Infinity;
+  const dmgMin=parseInt(document.getElementById('fDmgMin').value)||0;
+  const dmgMax=parseInt(document.getElementById('fDmgMax').value)||Infinity;
   const eff  =document.getElementById('fEff').value.trim().toLowerCase();
   FILTERED=ALL.filter(c=>{
     if(name){
@@ -889,6 +900,15 @@ function doSearch(){
     if(reg&&c.regulation!==reg)return false;
     const hp=parseInt(c.hp)||0;
     if(hp<hpMin||hp>hpMax)return false;
+    // 招式威力篩選：attacks 裡找所有純數字片段（傷害值）
+    if(dmgMin>0||dmgMax<Infinity){
+      const atks = (c.attacks||'');
+      // 找所有 \d+ 開頭結尾的數字（傷害值，排除括號內的能量數字）
+      const dmgs = [...atks.matchAll(/\s(\d{2,})\+?\s/g)].map(m=>parseInt(m[1]));
+      // 至少有一個招式的傷害在範圍內
+      const inRange = dmgs.some(d=> d>=dmgMin && d<=dmgMax);
+      if(!inRange) return false;
+    }
     // 寶可夢本身屬性篩選
     if(ACTIVE_TYPES.size>0&&!ACTIVE_TYPES.has(c.types))return false;
     // 招式能量篩選：從 attacks 的 (...) 括號內比對
@@ -903,19 +923,11 @@ function doSearch(){
     }
     // 特性篩選
     if(abilityFilter==='only' && !(c.abilities||'').trim()) return false;
-    // 卡片規則篩選（依名稱後綴判斷）
+    // 卡片規則篩選
     if(ruleFilter !== 'all'){
-      const n = (c.name||'');
-      const hasEx   = /ex$/i.test(n);
-      const hasVmax = /VMAX$/i.test(n);
-      const hasVstar= /VSTAR$/i.test(n);
-      const hasGx   = /GX$/i.test(n);
-      const hasRule = hasEx || hasVmax || hasVstar || hasGx;
-      if(ruleFilter==='ex'   && !hasEx)   return false;
-      if(ruleFilter==='vmax' && !hasVmax) return false;
-      if(ruleFilter==='vstar'&& !hasVstar)return false;
-      if(ruleFilter==='gx'   && !hasGx)  return false;
-      if(ruleFilter==='none' && hasRule)  return false;
+      const hasEx = /ex$/i.test(c.name||'');
+      if(ruleFilter==='ex'   && !hasEx) return false;
+      if(ruleFilter==='none' &&  hasEx) return false;
     }
     if(aceFilter==='only'){
       const ACE_NAMES = new Set([
@@ -1345,15 +1357,7 @@ document.querySelectorAll('.chip').forEach(chip=>{
   });
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fEff'].forEach(id=>document.getElementById(id).value='');
-  ACTIVE_TYPES.clear();
-  ACTIVE_ATK_ENERGY.clear();
-  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  setAbilityFilter('all');
-  setAceFilter('all');
-  setRuleFilter('all');
-  curPage=1;doSearch();
-});
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fEff'].forEach(id=>document.getElementById(id).value='');
 
 // ─── 牌組查詢 ────────────────────────────────────────────
 const PROXY = 'https://corsproxy.io/?';
@@ -1803,7 +1807,7 @@ document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
   window.scrollTo({top:h, behavior:'smooth'});
 });
 document.getElementById('floatResetBtn').addEventListener('click', ()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
