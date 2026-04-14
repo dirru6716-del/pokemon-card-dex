@@ -578,10 +578,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         <label>卡片規則</label>
         <div style="display:flex;flex-wrap:wrap;gap:6px">
           <button class="ability-tab on" id="ruleAll"  onclick="setRuleFilter('all')">不限制</button>
-          <button class="ability-tab" id="ruleEx"   onclick="setRuleFilter('ex')">ex</button>
-          <button class="ability-tab" id="ruleVmax" onclick="setRuleFilter('vmax')">VMAX</button>
-          <button class="ability-tab" id="ruleVstar" onclick="setRuleFilter('vstar')">VSTAR</button>
-          <button class="ability-tab" id="ruleGx"   onclick="setRuleFilter('gx')">GX</button>
+          <button class="ability-tab" id="ruleEx"   onclick="setRuleFilter('ex')">ex卡</button>
           <button class="ability-tab" id="ruleNone" onclick="setRuleFilter('none')">一般卡</button>
         </div>
       </div>
@@ -735,10 +732,9 @@ function setAceFilter(val){
 }
 function setRuleFilter(val){
   ruleFilter = val;
-  ['all','ex','vmax','vstar','gx','none'].forEach(k=>{
-    document.getElementById('rule'+k.charAt(0).toUpperCase()+k.slice(1))
-      ?.classList.toggle('on', val===k);
-  });
+  document.getElementById('ruleAll') .classList.toggle('on', val==='all');
+  document.getElementById('ruleEx')  .classList.toggle('on', val==='ex');
+  document.getElementById('ruleNone').classList.toggle('on', val==='none');
   doSearch();
 }
 const PAGE_SIZE_DESKTOP = 20;
