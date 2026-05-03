@@ -83,6 +83,17 @@ width:28px;height:28px;object-fit:contain;flex-shrink:0;
 .chip[data-e=“鋼”]{color:var(–metal);background:rgba(144,144,176,.12)}
 .chip[data-e=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
 .chip[data-e=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
+/* 屬性包含/排除切換 */
+.type-mode-btn{
+padding:2px 8px;border-radius:5px;font-size:.68rem;cursor:pointer;
+border:1px solid #2a3a64;background:#0f1526;color:#7888b8;
+font-family:‘Zen Kaku Gothic New’,sans-serif;transition:all .12s;
+}
+.type-mode-btn.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
+/* 排除模式下 chip 選中變紅 */
+body.exclude-type .chip[data-e].on{
+box-shadow:0 0 6px #e03040;border-color:#e03040 !important;
+}
 /* 招式能量 chip（外觀同屬性 chip，用 data-a） */
 .chip[data-a=“草”]{color:var(–grass);background:rgba(80,192,80,.12)}
 .chip[data-a=“火”]{color:var(–fire);background:rgba(224,96,48,.12)}
@@ -533,7 +544,12 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
       <div class="fg"><label>擴充包</label><select id="fSet"><option value="">全部</option></select></div>
       <div class="fg"><label>規範標記</label><select id="fReg"><option value="">全部</option></select></div>
       <div class="fg">
-        <label>屬性</label>
+        <label>屬性
+          <span style="float:right;display:flex;gap:4px">
+            <button class="type-mode-btn on" id="typeModeInclude" onclick="setTypeMode('include')">包含</button>
+            <button class="type-mode-btn" id="typeModeExclude" onclick="setTypeMode('exclude')">排除</button>
+          </span>
+        </label>
         <div class="chips">
           <span class="chip" data-e="草"><img src="https://asia.pokemon-card.com/various_images/energy/Grass.png" class="chip-img">草</span>
           <span class="chip" data-e="火"><img src="https://asia.pokemon-card.com/various_images/energy/Fire.png" class="chip-img">火</span>
@@ -725,7 +741,16 @@ const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
 const ACTIVE_ATK_ENERGY = new Set();  // 招式能量篩選
 let abilityFilter = 'all';  // 'all' | 'only'
 let aceFilter  = 'all';
-let ruleFilter = 'all';  // 'all'|'ex'|'vmax'|'vstar'|'gx'|'none'
+let ruleFilter = 'all';  // 'all'|'ex'|'none'
+let typeMode   = 'include';  // 'include' | 'exclude'
+
+function setTypeMode(val){
+  typeMode = val;
+  document.getElementById('typeModeInclude').classList.toggle('on', val==='include');
+  document.getElementById('typeModeExclude').classList.toggle('on', val==='exclude');
+  document.body.classList.toggle('exclude-type', val==='exclude');
+  doSearch();
+}
 
 function setAbilityFilter(val){
   abilityFilter = val;
@@ -917,7 +942,12 @@ function doSearch(){
       if(!inRange) return false;
     }
     // 寶可夢本身屬性篩選
-    if(ACTIVE_TYPES.size>0&&!ACTIVE_TYPES.has(c.types))return false;
+    // 寶可夢本身屬性篩選（包含 or 排除）
+    if(ACTIVE_TYPES.size>0){
+      const match = ACTIVE_TYPES.has(c.types);
+      if(typeMode==='include' && !match) return false;
+      if(typeMode==='exclude' &&  match) return false;
+    }
     // 招式能量篩選：從 attacks 的 (...) 括號內比對
     if(ACTIVE_ATK_ENERGY.size>0){
       const atksRaw = c.attacks || '';
@@ -1371,6 +1401,7 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
   setAbilityFilter('all');
   setAceFilter('all');
   setRuleFilter('all');
+  setTypeMode('include');
   curPage=1;doSearch();
 });
 
@@ -1829,6 +1860,7 @@ document.getElementById('floatResetBtn').addEventListener('click', ()=>{
   setAbilityFilter('all');
   setAceFilter('all');
   setRuleFilter('all');
+  setTypeMode('include');
   curPage=1;
   doSearch();
   document.body.scrollTo({top:0, behavior:'smooth'});
