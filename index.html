@@ -582,8 +582,10 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
       </div>
       <div class="fg">
         <label>招式 / 效果關鍵字</label>
-        <input type="text" id="fEff" placeholder="多個關鍵字用 | 分隔，例如：抽牌|丟棄"/>
-        <div style="font-size:.68rem;color:var(--text3);margin-top:3px">多關鍵字用 <b style="color:#d8e0f8">|</b> 分隔（OR 搜尋）</div>
+        <input type="text" id="fEff" placeholder="例：抽牌 or 丟棄　／　棄牌區 and 能量"/>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:3px">
+          <b style="color:#d8e0f8">or</b> 或 <b style="color:#d8e0f8">|</b> 其中一個　　<b style="color:#d8e0f8">and</b> 或 <b style="color:#d8e0f8">&</b> 同時包含
+        </div>
       </div>
       <div class="fg">
         <label>特性</label>
@@ -977,12 +979,17 @@ function doSearch(){
       ]);
       if(!ACE_NAMES.has(c.name)) return false;
     }
-    // 招式/效果多關鍵字（用 | 分隔，OR 搜尋）
+    // 招式/效果多關鍵字（| 或 or = OR，& 或 and = AND）
     if(eff){
-      const keywords = eff.split('|').map(k=>k.trim()).filter(Boolean);
       const haystack = ((c.abilities||'')+(c.attacks||'')).toLowerCase();
-      const matched  = keywords.some(k=> haystack.includes(k));
-      if(!matched) return false;
+      // 判斷分隔模式：含 & 或 " and " → AND，否則 OR
+      if(eff.includes('&') || / and /i.test(eff)){
+        const keywords = eff.split(/&| and /i).map(k=>k.trim()).filter(Boolean);
+        if(!keywords.every(k=> haystack.includes(k))) return false;
+      } else {
+        const keywords = eff.split(/\|| or /i).map(k=>k.trim()).filter(Boolean);
+        if(!keywords.some(k=> haystack.includes(k))) return false;
+      }
     }
     return true;
   });
