@@ -581,6 +581,12 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
         <div style="font-size:.68rem;color:var(--text3);margin-top:3px">搜尋招式傷害值範圍</div>
       </div>
       <div class="fg">
+        <label>撤退費用（幾個以下）</label>
+        <div class="hp-row">
+          <input type="number" id="fRetreatMax" placeholder="例：1（免費撤退填0）" min="0" max="5"/>
+        </div>
+      </div>
+      <div class="fg">
         <label>招式 / 效果關鍵字</label>
         <input type="text" id="fEff" placeholder="例：抽牌 or 丟棄　／　棄牌區 and 能量"/>
         <div style="font-size:.68rem;color:var(--text3);margin-top:3px">
@@ -916,6 +922,8 @@ function doSearch(){
   const dmgMaxRaw = document.getElementById('fDmgMax').value.trim();
   const dmgMin = dmgMinRaw !== '' ? parseInt(dmgMinRaw) : null;
   const dmgMax = dmgMaxRaw !== '' ? parseInt(dmgMaxRaw) : null;
+  const retreatMaxRaw = document.getElementById('fRetreatMax').value.trim();
+  const retreatMax = retreatMaxRaw !== '' ? parseInt(retreatMaxRaw) : null;
   const eff  =document.getElementById('fEff').value.trim().toLowerCase();
   FILTERED=ALL.filter(c=>{
     if(name){
@@ -930,6 +938,16 @@ function doSearch(){
     if(reg&&c.regulation!==reg)return false;
     const hp=parseInt(c.hp)||0;
     if(hp<hpMin||hp>hpMax)return false;
+    // 撤退費用篩選：從 retreat_cost 欄位取數字
+    if(retreatMax !== null){
+      // retreat_cost 格式如「2（無、無）」或「0（免費）」
+      const rStr = (c.retreat_cost||'').trim();
+      const rNum = rStr === '' ? null :
+                   rStr.startsWith('0') ? 0 :
+                   parseInt(rStr) || 0;
+      if(rNum === null) return false;  // 沒有撤退資料（非寶可夢卡）
+      if(rNum > retreatMax) return false;
+    }
     // 招式威力篩選
     if(dmgMin !== null || dmgMax !== null){
       const atks = (c.attacks||'');
@@ -1401,7 +1419,7 @@ document.querySelectorAll('.chip').forEach(chip=>{
   });
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
@@ -1860,7 +1878,7 @@ document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
   window.scrollTo({top:h, behavior:'smooth'});
 });
 document.getElementById('floatResetBtn').addEventListener('click', ()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
