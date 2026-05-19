@@ -201,7 +201,26 @@ content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
 .rule-block{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #f0c040;border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:6px;font-size:.88rem;color:#aab0cc;line-height:1.65}
 .no-detail{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#404870;gap:10px;font-size:1rem}
 
-/* ★ 官方連結 */
+/* ★ 頁尾 */
+.site-footer{
+background:#060910;
+border-top:1px solid #1f2b4a;
+padding:20px 24px;
+text-align:center;
+line-height:1.9;
+}
+.site-footer p{
+font-size:.72rem;
+color:#404870;
+margin-bottom:2px;
+}
+.footer-link{
+color:#3060e0;text-decoration:underline;
+text-underline-offset:2px;transition:color .12s;
+}
+.footer-link:hover{color:#f0c040}
+/* 手機版頁尾也要可見 */
+body.mobile .site-footer{display:block}
 .official-link{
 display:flex;align-items:center;gap:8px;
 padding:10px 14px;border-radius:8px;
@@ -690,6 +709,15 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
   <button class="scroll-btn scroll-btn-clear" id="floatResetBtn" title="清除搜尋條件">✕</button>
 </div>
+
+<!-- 頁尾 -->
+
+<footer class="site-footer">
+  <p>本站為熱愛 PTCG 的粉絲自製非營利專案，旨在推廣寶可夢集換式卡牌實體遊戲。</p>
+  <p>所有卡牌圖像、文字與商標之智慧財產權均歸屬 The Pokémon Company、Nintendo、Creatures Inc. 及 GAME FREAK inc. 所有。</p>
+  <p>本站之卡牌資料皆取自於 <a class="footer-link" href="https://asia.pokemon-card.com/tw/" target="_blank">寶可夢集換式卡牌遊戲官方主頁「訓練家網站」in 台灣</a>。</p>
+  <p>本站絕無意侵犯官方權益，若版權方認為有任何不妥，請透過 <a class="footer-link" href="mailto:" id="contactLink">聯絡我們</a> 告知，本站將立即配合下架修改。</p>
+</footer>
 
 <!-- 牌組查詢抽屜 -->
 
