@@ -559,6 +559,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
     <div class="panel-hdr" id="filterHdr">▸ FILTER</div>
     <div class="filters" id="filtersPanel">
       <div class="fg"><label>名稱 / 卡號</label><input type="text" id="fName" placeholder="名稱 或 卡號（如 #071/083）"/></div>
+      <div class="fg"><label>繪師</label><input type="text" id="fIllustrator" placeholder="繪師名稱，例如：Kariya"/></div>
       <div class="fg"><label>卡片類型</label><select id="fType"><option value="">全部</option></select></div>
       <div class="fg"><label>擴充包</label><select id="fSet"><option value="">全部</option></select></div>
       <div class="fg"><label>規範標記</label><select id="fReg"><option value="">全部</option></select></div>
@@ -716,7 +717,7 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   <p>本站為熱愛 PTCG 的粉絲自製非營利專案，旨在推廣寶可夢集換式卡牌實體遊戲。</p>
   <p>所有卡牌圖像、文字與商標之智慧財產權均歸屬 The Pokémon Company、Nintendo、Creatures Inc. 及 GAME FREAK inc. 所有。</p>
   <p>本站之卡牌資料皆取自於 <a class="footer-link" href="https://asia.pokemon-card.com/tw/" target="_blank">寶可夢集換式卡牌遊戲官方主頁「訓練家網站」in 台灣</a>。</p>
-  <p>本站絕無意侵犯官方權益，若版權方認為有任何不妥，請透過 <a class="footer-link" href="mailto:" id="contactLink">聯絡我們</a> 告知，本站將立即配合下架修改。</p>
+  <p>本站絕無意侵犯官方權益，若版權方認為有任何不妥，請透過 <a class="footer-link" href="mailto:dirru6716@gmail.com">聯絡我們</a> 告知，本站將立即配合下架修改。</p>
 </footer>
 
 <!-- 牌組查詢抽屜 -->
@@ -941,6 +942,7 @@ function fillSel(id,opts){
 // ─── SEARCH ──────────────────────────────────────────────
 function doSearch(){
   const name =document.getElementById('fName').value.trim().toLowerCase();
+  const illus=document.getElementById('fIllustrator').value.trim().toLowerCase();
   const type =document.getElementById('fType').value;
   const set  =document.getElementById('fSet').value;
   const reg  =document.getElementById('fReg').value;
@@ -962,6 +964,7 @@ function doSearch(){
       if(!nameMatch && !numberMatch) return false;
     }
     if(type&&c.card_type!==type)return false;
+    if(illus&&!(c.illustrator||'').toLowerCase().includes(illus))return false;
     if(set&&c.set_name!==set)return false;
     if(reg&&c.regulation!==reg)return false;
     const hp=parseInt(c.hp)||0;
@@ -1204,6 +1207,8 @@ function renderDetail(c){
   if(c.hp)html+=`<div class="srow"><span class="sl">HP</span><span class="hp-badge">${esc(c.hp)}</span></div>`;
   if(c.types)html+=`<div class="srow"><span class="sl">屬性</span><span class="sv" style="color:${tc}">${esc(c.types)}</span></div>`;
   if(c.set_name)html+=`<div class="srow"><span class="sl">擴充包</span><span class="sv" style="font-size:.7rem;text-align:right;max-width:170px">${esc(c.set_name)}</span></div>`;
+  if(c.illustrator)html+=`<div class="srow"><span class="sl">繪師</span><span class="sv" style="font-size:.82rem">${esc(c.illustrator)}</span></div>`;
+  if(c.pokedex_no)html+=`<div class="srow"><span class="sl">圖鑑編號</span><span class="sv">#${esc(c.pokedex_no)}</span></div>`;
   html+=`</div>`;
   if(c.abilities){
     html+=`<div class="dsec"><div class="dsec-hdr">特性 ABILITY</div>`;
@@ -1279,61 +1284,32 @@ function renderDetail(c){
   if(isPoke) renderEvolution(c);
 }
 
-// ─── 進化鏈 fetch ────────────────────────────────────────
-async function renderEvolution(c){
+// ─── 進化鏈（本地 CSV evolution_chain 欄位）────────────
+function renderEvolution(c){
   const el = document.getElementById('evoContent');
   if(!el) return;
-  el.innerHTML = '<span style="color:#404870;font-size:.78rem">載入中…</span>';
 
-  try{
-    const detailUrl = `https://asia.pokemon-card.com/tw/card-search/detail/${c.card_id}/`;
-    const proxyUrl  = 'https://corsproxy.io/?' + encodeURIComponent(detailUrl);
-    const resp = await fetch(proxyUrl);
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const rawHtml = await resp.text();
+  const chain = (c.evolution_chain||'').trim();
+  if(!chain){ el.innerHTML='<span style="color:#404870">—</span>'; return; }
 
-    // 直接用 regex 從 HTML 原始碼抓進化鏈區塊
-    // 進化區塊格式：<h3>進化</h3> 後面的 <ul>...</ul>
-    const evoBlockMatch = rawHtml.match(/<h3[^>]*>進化<\/h3>([\s\S]*?)<h3/);
-    if(!evoBlockMatch) throw new Error('無進化鏈');
+  // 分割進化鏈名稱
+  const names = chain.split('|').map(n=>n.trim()).filter(Boolean);
+  if(!names.length){ el.innerHTML='<span style="color:#404870">—</span>'; return; }
 
-    const evoBlock = evoBlockMatch[1];
-
-    // 從 keyword= 參數抓名稱（URL decode）
-    const names = [];
-    const re = /keyword=([^&"]+)/g;
-    let m;
-    while((m = re.exec(evoBlock)) !== null){
-      const name = decodeURIComponent(m[1]);
-      if(!names.includes(name)) names.push(name);
+  const parts = names.map(name=>{
+    const isSelf = (name === c.name);
+    // 在 CSV 裡找第一筆同名卡
+    const found = ALL.find(a => a.name === name);
+    if(isSelf){
+      return `<span style="color:#f0c040;font-weight:700">▶ ${esc(name)}</span>`;
+    } else if(found){
+      return `<a class="evo-link" onclick="selectCard(ALL.find(x=>x.card_id==='${found.card_id}'),null)">${esc(name)}</a>`;
+    } else {
+      return `<span style="color:#404870">${esc(name)}</span>`;
     }
+  });
 
-    if(!names.length) throw new Error('無進化名稱');
-
-    // 確認 el 還存在（使用者可能已切換卡片）
-    const evoEl = document.getElementById('evoContent');
-    if(!evoEl) return;
-
-    // 對每個名稱生成連結
-    const parts = names.map(name=>{
-      const isSelf = (name === c.name);
-      // CSV 裡找第一筆同名卡
-      const found = ALL.find(a => a.name === name);
-      if(isSelf){
-        return `<span style="color:#f0c040;font-weight:700">▶ ${esc(name)}</span>`;
-      } else if(found){
-        return `<a class="evo-link" onclick="selectCard(ALL.find(x=>x.card_id==='${found.card_id}'),null)">${esc(name)}</a>`;
-      } else {
-        return `<span style="color:#404870">${esc(name)}</span>`;
-      }
-    });
-
-    evoEl.innerHTML = parts.join(' <span style="color:#404870">→</span> ');
-
-  } catch(e){
-    const evoEl = document.getElementById('evoContent');
-    if(evoEl) evoEl.innerHTML = '<span style="color:#404870;font-size:.78rem">—</span>';
-  }
+  el.innerHTML = parts.join(' <span style="color:#404870">→</span> ');
 }
 
 function speakCard(){
@@ -1447,7 +1423,7 @@ document.querySelectorAll('.chip').forEach(chip=>{
   });
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fIllustrator','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
@@ -1906,7 +1882,7 @@ document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
   window.scrollTo({top:h, behavior:'smooth'});
 });
 document.getElementById('floatResetBtn').addEventListener('click', ()=>{
-  ['fName','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fIllustrator','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
