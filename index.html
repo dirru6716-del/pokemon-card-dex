@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
@@ -40,158 +39,158 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;gap:14px;padding:8px 20px;flex-shrink:0;background:var(–surface);border-bottom:1px solid var(–border)}
-.pokeball{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:conic-gradient(var(–red) 180deg,#fff 180deg);border:2px solid #fff;box-shadow:0 0 0 2px var(–blue),0 0 14px var(–blue-dim);position:relative}
-.pokeball::after{content:’’;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#fff;border-radius:50%;border:2px solid #222}
-.logo-text{font-family:‘Orbitron’,sans-serif;font-size:1.1rem;letter-spacing:3px;color:var(–gold);text-shadow:0 0 16px var(–gold-dim)}
-.topbar-stats{margin-left:auto;font-size:.68rem;color:var(–text3);letter-spacing:.5px;text-align:right;line-height:1.8}
-.topbar-stats b{color:var(–gold);font-size:.8rem}
+.topbar{display:flex;align-items:center;gap:14px;padding:8px 20px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border)}
+.pokeball{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:conic-gradient(var(--red) 180deg,#fff 180deg);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue),0 0 14px var(--blue-dim);position:relative}
+.pokeball::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#fff;border-radius:50%;border:2px solid #222}
+.logo-text{font-family:'Orbitron',sans-serif;font-size:1.1rem;letter-spacing:3px;color:var(--gold);text-shadow:0 0 16px var(--gold-dim)}
+.topbar-stats{margin-left:auto;font-size:.68rem;color:var(--text3);letter-spacing:.5px;text-align:right;line-height:1.8}
+.topbar-stats b{color:var(--gold);font-size:.8rem}
 
 /* ── LAYOUT ── */
 .layout{display:grid;grid-template-columns:230px 220px 1fr 310px;flex:1;overflow:hidden}
 
 /* ── LEFT ── */
-.left{background:var(–surface);border-right:1px solid var(–border);display:flex;flex-direction:column;overflow:hidden}
-.panel-hdr{padding:10px 14px 8px;flex-shrink:0;font-family:‘Orbitron’,sans-serif;font-size:.52rem;letter-spacing:3px;color:var(–gold);border-bottom:1px solid var(–border)}
+.left{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{padding:10px 14px 8px;flex-shrink:0;font-family:'Orbitron',sans-serif;font-size:.52rem;letter-spacing:3px;color:var(--gold);border-bottom:1px solid var(--border)}
 .filters{padding:10px;display:flex;flex-direction:column;gap:9px;overflow-y:auto;flex:1}
-.fg label{display:block;font-size:.8rem;letter-spacing:1.5px;color:var(–text3);text-transform:uppercase;margin-bottom:4px}
-.fg input,.fg select{width:100%;background:var(–bg2);border:1px solid var(–border);border-radius:6px;color:var(–text);font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.95rem;padding:7px 10px;outline:none;transition:border-color .15s}
-.fg input:focus,.fg select:focus{border-color:var(–blue)}
-.fg select option{background:var(–bg2)}
+.fg label{display:block;font-size:.8rem;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:4px}
+.fg input,.fg select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:'Zen Kaku Gothic New',sans-serif;font-size:.95rem;padding:7px 10px;outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus{border-color:var(--blue)}
+.fg select option{background:var(--bg2)}
 .hp-row{display:grid;grid-template-columns:1fr 12px 1fr;gap:4px;align-items:center}
-.hp-sep{text-align:center;color:var(–text3);font-size:1rem}
+.hp-sep{text-align:center;color:var(--text3);font-size:1rem}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{
-padding:3px 5px;border-radius:8px;font-size:.7rem;
-font-weight:700;cursor:pointer;border:2px solid transparent;
-opacity:.6;transition:all .15s;user-select:none;
-display:flex;flex-direction:column;align-items:center;gap:2px;
-min-width:36px;
+  padding:3px 5px;border-radius:8px;font-size:.7rem;
+  font-weight:700;cursor:pointer;border:2px solid transparent;
+  opacity:.6;transition:all .15s;user-select:none;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  min-width:36px;
 }
 .chip-img{
-width:28px;height:28px;object-fit:contain;flex-shrink:0;
+  width:28px;height:28px;object-fit:contain;flex-shrink:0;
 }
 .chip:hover{opacity:.9;transform:scale(1.08)}
 .chip.on{opacity:1;border-color:currentColor;box-shadow:0 0 6px currentColor;transform:scale(1.1);background:rgba(255,255,255,.06)}
-.chip[data-e=“草”]{color:var(–grass);background:rgba(80,192,80,.12)}
-.chip[data-e=“火”]{color:var(–fire);background:rgba(224,96,48,.12)}
-.chip[data-e=“水”]{color:var(–water);background:rgba(48,144,240,.12)}
-.chip[data-e=“雷”]{color:var(–lightning);background:rgba(240,192,32,.12)}
-.chip[data-e=“超”]{color:var(–psychic);background:rgba(192,96,224,.12)}
-.chip[data-e=“鬥”]{color:var(–fighting);background:rgba(192,128,48,.12)}
-.chip[data-e=“惡”]{color:var(–dark);background:rgba(112,96,176,.12)}
-.chip[data-e=“鋼”]{color:var(–metal);background:rgba(144,144,176,.12)}
-.chip[data-e=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
-.chip[data-e=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
+.chip[data-e="草"]{color:var(--grass);background:rgba(80,192,80,.12)}
+.chip[data-e="火"]{color:var(--fire);background:rgba(224,96,48,.12)}
+.chip[data-e="水"]{color:var(--water);background:rgba(48,144,240,.12)}
+.chip[data-e="雷"]{color:var(--lightning);background:rgba(240,192,32,.12)}
+.chip[data-e="超"]{color:var(--psychic);background:rgba(192,96,224,.12)}
+.chip[data-e="鬥"]{color:var(--fighting);background:rgba(192,128,48,.12)}
+.chip[data-e="惡"]{color:var(--dark);background:rgba(112,96,176,.12)}
+.chip[data-e="鋼"]{color:var(--metal);background:rgba(144,144,176,.12)}
+.chip[data-e="龍"]{color:var(--dragon);background:rgba(96,80,208,.12)}
+.chip[data-e="無"]{color:var(--colorless);background:rgba(144,152,184,.12)}
 /* 屬性包含/排除切換 */
 .type-mode-btn{
-padding:2px 8px;border-radius:5px;font-size:.68rem;cursor:pointer;
-border:1px solid #2a3a64;background:#0f1526;color:#7888b8;
-font-family:‘Zen Kaku Gothic New’,sans-serif;transition:all .12s;
+  padding:2px 8px;border-radius:5px;font-size:.68rem;cursor:pointer;
+  border:1px solid #2a3a64;background:#0f1526;color:#7888b8;
+  font-family:'Zen Kaku Gothic New',sans-serif;transition:all .12s;
 }
 .type-mode-btn.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
 /* 排除模式下 chip 選中變紅 */
 body.exclude-type .chip[data-e].on{
-box-shadow:0 0 6px #e03040;border-color:#e03040 !important;
+  box-shadow:0 0 6px #e03040;border-color:#e03040 !important;
 }
 /* 招式能量 chip（外觀同屬性 chip，用 data-a） */
-.chip[data-a=“草”]{color:var(–grass);background:rgba(80,192,80,.12)}
-.chip[data-a=“火”]{color:var(–fire);background:rgba(224,96,48,.12)}
-.chip[data-a=“水”]{color:var(–water);background:rgba(48,144,240,.12)}
-.chip[data-a=“雷”]{color:var(–lightning);background:rgba(240,192,32,.12)}
-.chip[data-a=“超”]{color:var(–psychic);background:rgba(192,96,224,.12)}
-.chip[data-a=“鬥”]{color:var(–fighting);background:rgba(192,128,48,.12)}
-.chip[data-a=“惡”]{color:var(–dark);background:rgba(112,96,176,.12)}
-.chip[data-a=“鋼”]{color:var(–metal);background:rgba(144,144,176,.12)}
-.chip[data-a=“龍”]{color:var(–dragon);background:rgba(96,80,208,.12)}
-.chip[data-a=“無”]{color:var(–colorless);background:rgba(144,152,184,.12)}
-.btn-search{margin:10px;flex-shrink:0;padding:10px;background:#3060e0;background:linear-gradient(135deg,#3060e0,#1840b0);border:none;border-radius:8px;color:#fff;font-family:‘Orbitron’,sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px rgba(48,96,224,.35)}
+.chip[data-a="草"]{color:var(--grass);background:rgba(80,192,80,.12)}
+.chip[data-a="火"]{color:var(--fire);background:rgba(224,96,48,.12)}
+.chip[data-a="水"]{color:var(--water);background:rgba(48,144,240,.12)}
+.chip[data-a="雷"]{color:var(--lightning);background:rgba(240,192,32,.12)}
+.chip[data-a="超"]{color:var(--psychic);background:rgba(192,96,224,.12)}
+.chip[data-a="鬥"]{color:var(--fighting);background:rgba(192,128,48,.12)}
+.chip[data-a="惡"]{color:var(--dark);background:rgba(112,96,176,.12)}
+.chip[data-a="鋼"]{color:var(--metal);background:rgba(144,144,176,.12)}
+.chip[data-a="龍"]{color:var(--dragon);background:rgba(96,80,208,.12)}
+.chip[data-a="無"]{color:var(--colorless);background:rgba(144,152,184,.12)}
+.btn-search{margin:10px;flex-shrink:0;padding:10px;background:#3060e0;background:linear-gradient(135deg,#3060e0,#1840b0);border:none;border-radius:8px;color:#fff;font-family:'Orbitron',sans-serif;font-size:.8rem;letter-spacing:2px;cursor:pointer;transition:opacity .15s,transform .1s;box-shadow:0 4px 16px rgba(48,96,224,.35)}
 .btn-search:hover{opacity:.9;transform:translateY(-1px)}
-.btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:#1a2340;border:1px solid #2a3a64;border-radius:8px;color:#7888b8;font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
+.btn-reset{margin:0 10px 10px;padding:8px;flex-shrink:0;background:#1a2340;border:1px solid #2a3a64;border-radius:8px;color:#7888b8;font-family:'Zen Kaku Gothic New',sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s}
 .btn-reset:hover{border-color:#e03040;color:#e03040}
 
 /* 特性篩選按鈕 */
 .ability-tab{
-flex:1;padding:7px 6px;border-radius:6px;
-border:1px solid #2a3a64;background:#0f1526;
-color:#7888b8;font-size:.82rem;cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
-transition:all .15s;text-align:center;
+  flex:1;padding:7px 6px;border-radius:6px;
+  border:1px solid #2a3a64;background:#0f1526;
+  color:#7888b8;font-size:.82rem;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  transition:all .15s;text-align:center;
 }
 .ability-tab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
 .ability-tab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
 
 /* ── CENTER ── */
-.center{display:flex;flex-direction:column;overflow:hidden;background:var(–bg)}
-.result-bar{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(–border);flex-shrink:0}
-.rcount{font-family:‘Orbitron’,sans-serif;font-size:.58rem;letter-spacing:1px;color:var(–text3)}
-.sort-sel{margin-left:auto;background:var(–surface);border:1px solid var(–border);border-radius:5px;color:var(–text2);font-size:.7rem;padding:3px 7px;outline:none;font-family:‘Zen Kaku Gothic New’,sans-serif}
+.center{display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.result-bar{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rcount{font-family:'Orbitron',sans-serif;font-size:.58rem;letter-spacing:1px;color:var(--text3)}
+.sort-sel{margin-left:auto;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.7rem;padding:3px 7px;outline:none;font-family:'Zen Kaku Gothic New',sans-serif}
 .dedup-toggle{
-display:flex;align-items:center;gap:6px;cursor:pointer;
-font-size:.75rem;color:var(–text2);user-select:none;white-space:nowrap;
+  display:flex;align-items:center;gap:6px;cursor:pointer;
+  font-size:.75rem;color:var(--text2);user-select:none;white-space:nowrap;
 }
 .dedup-toggle input{display:none}
 .dedup-box{
-width:16px;height:16px;border-radius:4px;
-border:1px solid var(–border2);background:var(–bg2);
-display:flex;align-items:center;justify-content:center;
-transition:all .15s;flex-shrink:0;
+  width:16px;height:16px;border-radius:4px;
+  border:1px solid var(--border2);background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;flex-shrink:0;
 }
 .dedup-toggle input:checked + .dedup-box{
-background:var(–blue);border-color:var(–blue);
+  background:var(--blue);border-color:var(--blue);
 }
 .dedup-toggle input:checked + .dedup-box::after{
-content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
+  content:'✓';font-size:.65rem;color:#fff;font-weight:700;
 }
 .grid-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px;overflow-y:auto;flex:1;align-content:start}
-.card-thumb{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(–border);aspect-ratio:0.717;background:var(–surface);transition:transform .14s,border-color .14s,box-shadow .14s}
-.card-thumb:hover{transform:translateY(-3px);border-color:var(–border2);box-shadow:0 8px 20px rgba(0,0,0,.6)}
-.card-thumb.sel{border-color:var(–gold);box-shadow:0 0 0 1px var(–gold),0 4px 16px var(–gold-dim)}
+.card-thumb{border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid var(--border);aspect-ratio:0.717;background:var(--surface);transition:transform .14s,border-color .14s,box-shadow .14s}
+.card-thumb:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 8px 20px rgba(0,0,0,.6)}
+.card-thumb.sel{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 4px 16px var(--gold-dim)}
 .card-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(–text3);text-align:center;padding:6px;line-height:1.4}
-.empty-st{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px;color:var(–text3);font-size:.82rem}
-.empty-ball{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(–surface2) 180deg,var(–bg2) 180deg);border:3px solid var(–border);opacity:.35}
-.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;border-top:1px solid var(–border);flex-shrink:0;background:var(–surface)}
-.pager-btn{min-width:30px;height:28px;padding:0 7px;background:var(–bg2);border:1px solid var(–border);border-radius:5px;color:var(–text2);font-size:.72rem;cursor:pointer;transition:background .12s,color .12s;font-family:‘Zen Kaku Gothic New’,sans-serif;display:inline-flex;align-items:center;justify-content:center}
-.pager-btn:hover:not(:disabled){background:var(–surface2);color:var(–text)}
-.pager-btn.active{background:var(–blue);border-color:var(–blue);color:#fff}
+.no-img{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--text3);text-align:center;padding:6px;line-height:1.4}
+.empty-st{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px;color:var(--text3);font-size:.82rem}
+.empty-ball{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--surface2) 180deg,var(--bg2) 180deg);border:3px solid var(--border);opacity:.35}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:8px 12px;border-top:1px solid var(--border);flex-shrink:0;background:var(--surface)}
+.pager-btn{min-width:30px;height:28px;padding:0 7px;background:var(--bg2);border:1px solid var(--border);border-radius:5px;color:var(--text2);font-size:.72rem;cursor:pointer;transition:background .12s,color .12s;font-family:'Zen Kaku Gothic New',sans-serif;display:inline-flex;align-items:center;justify-content:center}
+.pager-btn:hover:not(:disabled){background:var(--surface2);color:var(--text)}
+.pager-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .pager-btn:disabled{opacity:.3;cursor:default}
-.pager-info{font-size:.68rem;color:var(–text3);padding:0 6px;white-space:nowrap}
+.pager-info{font-size:.68rem;color:var(--text3);padding:0 6px;white-space:nowrap}
 
 /* ── BIG IMAGE ── */
-.bigimg-panel{background:var(–bg2);border-left:1px solid var(–border);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px}
+.bigimg-panel{background:var(--bg2);border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px}
 .bigimg-panel img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.7);display:block}
-.bigimg-empty{color:var(–text3);font-size:.85rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
-.bigimg-empty .empty-ball{width:56px;height:56px;border-radius:50%;background:conic-gradient(var(–surface2) 180deg,var(–bg2) 180deg);border:3px solid var(–border);opacity:.35}
+.bigimg-empty{color:var(--text3);font-size:.85rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.bigimg-empty .empty-ball{width:56px;height:56px;border-radius:50%;background:conic-gradient(var(--surface2) 180deg,var(--bg2) 180deg);border:3px solid var(--border);opacity:.35}
 
 /* ── RIGHT ── */
-.right{background:var(–surface);border-left:1px solid var(–border);display:flex;flex-direction:column;overflow:hidden}
-.dtop{padding:12px 14px 9px;border-bottom:1px solid var(–border);flex-shrink:0}
-.dname{font-size:1.4rem;font-weight:700;color:var(–gold);line-height:1.25;margin-bottom:5px}
+.right{background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dtop{padding:12px 14px 9px;border-bottom:1px solid var(--border);flex-shrink:0}
+.dname{font-size:1.4rem;font-weight:700;color:var(--gold);line-height:1.25;margin-bottom:5px}
 .dmeta{display:flex;gap:4px;flex-wrap:wrap}
-.tag{font-size:.8rem;padding:3px 9px;border-radius:4px;border:1px solid var(–border);color:var(–text2);background:var(–surface2)}
+.tag{font-size:.8rem;padding:3px 9px;border-radius:4px;border:1px solid var(--border);color:var(--text2);background:var(--surface2)}
 .dbody{overflow-y:auto;flex:1;padding:11px 13px}
 .dsec{margin-bottom:13px}
-.dsec-hdr{font-family:‘Orbitron’,sans-serif;font-size:.7rem;letter-spacing:2px;color:var(–blue);border-bottom:1px solid var(–border);padding-bottom:5px;margin-bottom:8px}
+.dsec-hdr{font-family:'Orbitron',sans-serif;font-size:.7rem;letter-spacing:2px;color:var(--blue);border-bottom:1px solid var(--border);padding-bottom:5px;margin-bottom:8px}
 .srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:1rem}
-.sl{color:var(–text3)}.sv{color:var(–text);font-weight:500}
-.hp-badge{font-family:‘Orbitron’,sans-serif;font-weight:900;font-size:1.1rem;background:var(–red);color:#fff;padding:2px 11px;border-radius:4px;box-shadow:0 2px 8px rgba(224,48,64,.35)}
+.sl{color:var(--text3)}.sv{color:var(--text);font-weight:500}
+.hp-badge{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.1rem;background:var(--red);color:#fff;padding:2px 11px;border-radius:4px;box-shadow:0 2px 8px rgba(224,48,64,.35)}
 .ability-card{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #c060e0;border-radius:0 6px 6px 0;padding:9px 11px;margin-bottom:8px}
 .aname{font-size:1rem;font-weight:700;color:#c060e0;margin-bottom:4px}
 .aeff{font-size:.9rem;color:#7888b8;line-height:1.6}
 .atk-card{background:#0f1526;border:1px solid #1f2b4a;border-radius:7px;padding:9px 11px;margin-bottom:8px}
 .atk-hdr{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
-.atk-name{font-size:1rem;font-weight:700;color:var(–text)}
+.atk-name{font-size:1rem;font-weight:700;color:var(--text)}
 .cost-wrap{display:flex;gap:3px}
 .ec{width:18px;height:18px;border-radius:50%;font-size:.6rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-.ec-草{background:var(–grass);color:#fff}.ec-火{background:var(–fire);color:#fff}
-.ec-水{background:var(–water);color:#fff}.ec-雷{background:var(–lightning);color:#000}
-.ec-超{background:var(–psychic);color:#fff}.ec-鬥{background:var(–fighting);color:#fff}
-.ec-惡{background:var(–dark);color:#fff}.ec-鋼{background:var(–metal);color:#fff}
-.ec-妖{background:var(–fairy);color:#fff}.ec-龍{background:var(–dragon);color:#fff}
-.ec-無{background:var(–colorless);color:#222}
-.atk-dmg{font-family:‘Orbitron’,sans-serif;font-size:1.2rem;font-weight:700;color:#f0c040;margin-left:auto}
+.ec-草{background:var(--grass);color:#fff}.ec-火{background:var(--fire);color:#fff}
+.ec-水{background:var(--water);color:#fff}.ec-雷{background:var(--lightning);color:#000}
+.ec-超{background:var(--psychic);color:#fff}.ec-鬥{background:var(--fighting);color:#fff}
+.ec-惡{background:var(--dark);color:#fff}.ec-鋼{background:var(--metal);color:#fff}
+.ec-妖{background:var(--fairy);color:#fff}.ec-龍{background:var(--dragon);color:#fff}
+.ec-無{background:var(--colorless);color:#222}
+.atk-dmg{font-family:'Orbitron',sans-serif;font-size:1.2rem;font-weight:700;color:#f0c040;margin-left:auto}
 .atk-eff{font-size:.88rem;color:#7888b8;line-height:1.6}
 .eff-block{background:#0f1526;border:1px solid #1f2b4a;border-left:2px solid #3060e0;border-radius:0 6px 6px 0;padding:10px 13px;font-size:.9rem;color:#7888b8;line-height:1.7;white-space:pre-wrap}
 .bstats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:4px}
@@ -203,111 +202,111 @@ content:‘✓’;font-size:.65rem;color:#fff;font-weight:700;
 
 /* ★ 頁尾 */
 .site-footer{
-background:#060910;
-border-top:1px solid #1f2b4a;
-padding:20px 24px;
-text-align:center;
-line-height:1.9;
+  background:#060910;
+  border-top:1px solid #1f2b4a;
+  padding:20px 24px;
+  text-align:center;
+  line-height:1.9;
 }
 .site-footer p{
-font-size:.72rem;
-color:#404870;
-margin-bottom:2px;
+  font-size:.72rem;
+  color:#404870;
+  margin-bottom:2px;
 }
 .footer-link{
-color:#3060e0;text-decoration:underline;
-text-underline-offset:2px;transition:color .12s;
+  color:#3060e0;text-decoration:underline;
+  text-underline-offset:2px;transition:color .12s;
 }
 .footer-link:hover{color:#f0c040}
 /* 手機版頁尾也要可見 */
 body.mobile .site-footer{display:block}
 .official-link{
-display:flex;align-items:center;gap:8px;
-padding:10px 14px;border-radius:8px;
-background:#0f1526;border:1px solid #2a3a64;
-color:#7888b8;font-size:.88rem;
-text-decoration:none;transition:all .15s;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;border-radius:8px;
+  background:#0f1526;border:1px solid #2a3a64;
+  color:#7888b8;font-size:.88rem;
+  text-decoration:none;transition:all .15s;
 }
 .official-link:hover{border-color:#3060e0;color:#d8e0f8;background:#141b30}
 
 /* ★ 語音朗讀按鈕 */
 .btn-speak{
-width:100%;padding:18px;
-background:linear-gradient(135deg,#7060b0,#9040c0);
-border:none;border-radius:14px;
-color:#fff;font-size:1.3rem;font-weight:700;
-cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
-box-shadow:0 6px 20px rgba(112,96,176,.5);
-transition:opacity .15s,transform .1s;
-letter-spacing:2px;
+  width:100%;padding:18px;
+  background:linear-gradient(135deg,#7060b0,#9040c0);
+  border:none;border-radius:14px;
+  color:#fff;font-size:1.3rem;font-weight:700;
+  cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  box-shadow:0 6px 20px rgba(112,96,176,.5);
+  transition:opacity .15s,transform .1s;
+  letter-spacing:2px;
 }
 
 /* ★ 進化鏈文字連結 */
 .evo-link{
-color:#3060e0;cursor:pointer;font-size:.88rem;
-text-decoration:underline;text-underline-offset:3px;
-transition:color .12s;
+  color:#3060e0;cursor:pointer;font-size:.88rem;
+  text-decoration:underline;text-underline-offset:3px;
+  transition:color .12s;
 }
 .evo-link:hover{color:#f0c040}
 
 /* ── 切換按鈕 ── */
 .btn-mode{
-margin-left:10px;padding:4px 12px;
-background:var(–surface2);border:1px solid var(–border2);
-border-radius:6px;color:var(–text2);font-size:.75rem;cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;transition:all .15s;white-space:nowrap;
+  margin-left:10px;padding:4px 12px;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:6px;color:var(--text2);font-size:.75rem;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;transition:all .15s;white-space:nowrap;
 }
-.btn-mode:hover{border-color:var(–gold);color:var(–gold)}
-.btn-mode.mobile-on{background:var(–gold);border-color:var(–gold);color:#111;font-weight:700}
+.btn-mode:hover{border-color:var(--gold);color:var(--gold)}
+.btn-mode.mobile-on{background:var(--gold);border-color:var(--gold);color:#111;font-weight:700}
 
 /* ══ 手機模式 ══════════════════════════════════════════════
-body.mobile 時，整體變成單欄垂直捲動
-結構：篩選面板(常開) → 卡片格 → 大圖 → 詳情
+   body.mobile 時，整體變成單欄垂直捲動
+   結構：篩選面板(常開) → 卡片格 → 大圖 → 詳情
 ══════════════════════════════════════════════════════════ */
 body.mobile{overflow:auto}
 body.mobile .layout{
-display:flex;flex-direction:column;
-height:auto;overflow:visible;
+  display:flex;flex-direction:column;
+  height:auto;overflow:visible;
 }
 /* 左側篩選：常開（移除收合） */
 body.mobile .left{
-width:100%;height:auto;border-right:none;
-border-bottom:1px solid var(–border);overflow:visible;
+  width:100%;height:auto;border-right:none;
+  border-bottom:1px solid var(--border);overflow:visible;
 }
 body.mobile .filters{
-display:flex;  /* ★ 改為常開 */
-max-height:none;overflow-y:visible;
+  display:flex;  /* ★ 改為常開 */
+  max-height:none;overflow-y:visible;
 }
 body.mobile .panel-hdr{
-display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;
 }
 
 /* 中間卡片格：3欄 */
 body.mobile .center{width:100%;overflow:visible;height:auto}
 body.mobile .grid-wrap{height:auto;overflow:visible;flex:none}
 body.mobile .grid{
-grid-template-columns:repeat(3,1fr);
-overflow:visible;height:auto;
+  grid-template-columns:repeat(3,1fr);
+  overflow:visible;height:auto;
 }
 body.mobile .grid-wrap .grid{flex:none}
 
 /* 大圖 */
 body.mobile .bigimg-panel{
-width:100%;height:auto;
-border-left:none;border-top:1px solid var(–border);
-padding:0;
+  width:100%;height:auto;
+  border-left:none;border-top:1px solid var(--border);
+  padding:0;
 }
 body.mobile .bigimg-panel img{
-width:100%;max-height:none;
-border-radius:0;box-shadow:none;
+  width:100%;max-height:none;
+  border-radius:0;box-shadow:none;
 }
 
 /* 詳情 */
 body.mobile .right{
-width:100%;height:auto;border-left:none;
-border-top:1px solid var(–border);
-overflow:visible;
+  width:100%;height:auto;border-left:none;
+  border-top:1px solid var(--border);
+  overflow:visible;
 }
 body.mobile .dbody{overflow:visible;height:auto;padding-bottom:100px}
 
@@ -318,24 +317,24 @@ body.mobile .logo-text{font-size:.85rem;letter-spacing:2px}
 /* ★ 手機換頁按鈕放大 */
 body.mobile .pager{padding:12px 8px;gap:6px}
 body.mobile .pager-btn{
-min-width:44px;height:44px;font-size:1rem;
-border-radius:8px;
+  min-width:44px;height:44px;font-size:1rem;
+  border-radius:8px;
 }
 body.mobile .pager-info{font-size:.82rem;padding:0 8px}
 
 /* ★ 浮動上下捲動按鈕 */
 .scroll-btns{
-position:fixed;right:14px;bottom:24px;
-display:none;flex-direction:column;gap:8px;z-index:100;
+  position:fixed;right:14px;bottom:24px;
+  display:none;flex-direction:column;gap:8px;z-index:100;
 }
 body.mobile .scroll-btns{display:flex}
 .scroll-btn{
-width:46px;height:46px;border-radius:50%;
-background:#3060e0;border:none;
-color:#fff;font-size:1.2rem;cursor:pointer;
-display:flex;align-items:center;justify-content:center;
-box-shadow:0 4px 16px rgba(0,0,0,.5);
-transition:background .15s,transform .1s;
+  width:46px;height:46px;border-radius:50%;
+  background:#3060e0;border:none;
+  color:#fff;font-size:1.2rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+  transition:background .15s,transform .1s;
 }
 .scroll-btn:hover{background:#2050c0;transform:scale(1.08)}
 .scroll-btn:active{transform:scale(.95)}
@@ -344,74 +343,74 @@ transition:background .15s,transform .1s;
 
 /* ── 牌組抽屜 ── */
 .deck-drawer{
-position:fixed;top:0;left:0;width:100%;height:100%;
-z-index:150;display:none;
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  z-index:150;display:none;
 }
 .deck-drawer.open{display:flex}
 .deck-backdrop{
-position:absolute;inset:0;
-background:rgba(9,13,24,.7);backdrop-filter:blur(4px);
+  position:absolute;inset:0;
+  background:rgba(9,13,24,.7);backdrop-filter:blur(4px);
 }
 .deck-panel{
-position:relative;z-index:1;
-width:420px;max-width:100%;
-background:var(–surface);
-border-right:1px solid var(–border);
-display:flex;flex-direction:column;
-animation:slideIn .2s ease;
+  position:relative;z-index:1;
+  width:420px;max-width:100%;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  animation:slideIn .2s ease;
 }
 @keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
 .deck-panel-hdr{
-display:flex;align-items:center;justify-content:space-between;
-padding:14px 16px;border-bottom:1px solid var(–border);
-font-family:‘Orbitron’,sans-serif;font-size:.75rem;
-letter-spacing:2px;color:var(–gold);flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  font-family:'Orbitron',sans-serif;font-size:.75rem;
+  letter-spacing:2px;color:var(--gold);flex-shrink:0;
 }
 .deck-close{
-background:transparent;border:none;color:var(–text3);
-font-size:1.2rem;cursor:pointer;padding:2px 6px;
-transition:color .15s;
+  background:transparent;border:none;color:var(--text3);
+  font-size:1.2rem;cursor:pointer;padding:2px 6px;
+  transition:color .15s;
 }
-.deck-close:hover{color:var(–red)}
+.deck-close:hover{color:var(--red)}
 
 /* 輸入區 */
 .deck-input-area{
-padding:14px 16px;border-bottom:1px solid var(–border);
-flex-shrink:0;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
 .deck-region-tabs{
-display:flex;gap:6px;margin-bottom:10px;
+  display:flex;gap:6px;margin-bottom:10px;
 }
 .rtab{
-flex:1;padding:8px;border-radius:6px;
-border:1px solid #2a3a64;background:#0f1526;
-color:#7888b8;font-size:.88rem;cursor:pointer;
-text-align:center;transition:all .15s;
-font-family:‘Zen Kaku Gothic New’,sans-serif;font-weight:500;
+  flex:1;padding:8px;border-radius:6px;
+  border:1px solid #2a3a64;background:#0f1526;
+  color:#7888b8;font-size:.88rem;cursor:pointer;
+  text-align:center;transition:all .15s;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-weight:500;
 }
 .rtab.on{background:#3060e0;border-color:#3060e0;color:#fff;font-weight:700}
 .rtab:not(.on):hover{border-color:#3060e0;color:#d8e0f8}
 .deck-input-row{display:flex;gap:6px}
 .deck-code-input{
-flex:1;background:#0f1526;border:1px solid #2a3a64;
-border-radius:6px;color:#d8e0f8;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
-font-size:.9rem;padding:8px 10px;outline:none;
-transition:border-color .15s;
+  flex:1;background:#0f1526;border:1px solid #2a3a64;
+  border-radius:6px;color:#d8e0f8;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  font-size:.9rem;padding:8px 10px;outline:none;
+  transition:border-color .15s;
 }
 .deck-code-input:focus{border-color:#3060e0}
 .deck-code-input::placeholder{color:#404870;font-size:.8rem}
 .btn-deck-fetch{
-padding:8px 16px;background:#3060e0;border:none;
-border-radius:6px;color:#fff;font-size:.9rem;font-weight:700;
-cursor:pointer;transition:opacity .15s;white-space:nowrap;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
+  padding:8px 16px;background:#3060e0;border:none;
+  border-radius:6px;color:#fff;font-size:.9rem;font-weight:700;
+  cursor:pointer;transition:opacity .15s;white-space:nowrap;
+  font-family:'Zen Kaku Gothic New',sans-serif;
 }
 .btn-deck-fetch:hover{opacity:.85}
 .btn-deck-fetch:disabled{opacity:.4;cursor:default}
 .deck-status{
-margin-top:8px;font-size:.72rem;color:var(–text3);
-min-height:18px;line-height:1.5;
+  margin-top:8px;font-size:.72rem;color:var(--text3);
+  min-height:18px;line-height:1.5;
 }
 .deck-status.err{color:#f08080}
 .deck-status.ok{color:#60d080}
@@ -419,115 +418,113 @@ min-height:18px;line-height:1.5;
 /* 牌組列表 */
 .deck-list{overflow-y:auto;flex:1;padding:10px 12px}
 .deck-section-title{
-font-size:.6rem;letter-spacing:2px;color:var(–gold);
-font-family:‘Orbitron’,sans-serif;
-border-bottom:1px solid var(–border);
-padding-bottom:5px;margin:10px 0 6px;
+  font-size:.6rem;letter-spacing:2px;color:var(--gold);
+  font-family:'Orbitron',sans-serif;
+  border-bottom:1px solid var(--border);
+  padding-bottom:5px;margin:10px 0 6px;
 }
 .deck-section-title:first-child{margin-top:0}
 .deck-card-row{
-display:flex;align-items:center;gap:10px;
-padding:6px 8px;border-radius:7px;cursor:pointer;
-transition:background .12s;margin-bottom:3px;
+  display:flex;align-items:center;gap:10px;
+  padding:6px 8px;border-radius:7px;cursor:pointer;
+  transition:background .12s;margin-bottom:3px;
 }
-.deck-card-row:hover{background:var(–surface2)}
-.deck-card-row.sel{background:var(–surface2);border:1px solid var(–gold)}
+.deck-card-row:hover{background:var(--surface2)}
+.deck-card-row.sel{background:var(--surface2);border:1px solid var(--gold)}
 .deck-card-thumb{
-width:38px;height:53px;border-radius:4px;
-object-fit:cover;border:1px solid var(–border);
-background:var(–bg2);flex-shrink:0;
+  width:38px;height:53px;border-radius:4px;
+  object-fit:cover;border:1px solid var(--border);
+  background:var(--bg2);flex-shrink:0;
 }
 .deck-card-info{flex:1;min-width:0}
 .deck-card-name{
-font-size:.82rem;font-weight:700;color:var(–text);
-white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:.82rem;font-weight:700;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.deck-card-sub{font-size:.68rem;color:var(–text3);margin-top:2px}
+.deck-card-sub{font-size:.68rem;color:var(--text3);margin-top:2px}
 .deck-card-qty{
-font-family:‘Orbitron’,sans-serif;font-size:.9rem;
-font-weight:700;color:var(–gold);
-background:var(–surface2);border:1px solid var(–border);
-border-radius:5px;padding:2px 8px;flex-shrink:0;
+  font-family:'Orbitron',sans-serif;font-size:.9rem;
+  font-weight:700;color:var(--gold);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:5px;padding:2px 8px;flex-shrink:0;
 }
 .deck-empty{
-display:flex;flex-direction:column;align-items:center;
-justify-content:center;height:200px;gap:10px;
-color:var(–text3);font-size:.82rem;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:200px;gap:10px;
+  color:var(--text3);font-size:.82rem;
 }
 
 /* topbar 牌組按鈕 */
 .btn-deck{
-padding:4px 12px;background:var(–surface2);
-border:1px solid var(–border2);border-radius:6px;
-color:var(–text2);font-size:.75rem;cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
-transition:all .15s;white-space:nowrap;
+  padding:4px 12px;background:var(--surface2);
+  border:1px solid var(--border2);border-radius:6px;
+  color:var(--text2);font-size:.75rem;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  transition:all .15s;white-space:nowrap;
 }
-.btn-deck:hover{border-color:var(–gold);color:var(–gold)}
+.btn-deck:hover{border-color:var(--gold);color:var(--gold)}
 
 /* 抽屜內卡牌詳情 */
 .deck-detail{
-position:absolute;inset:0;top:0;
-background:var(–surface);
-display:flex;flex-direction:column;
-overflow-y:auto;
+  position:absolute;inset:0;top:0;
+  background:var(--surface);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
 }
 .deck-detail-hdr{
-padding:10px 14px;border-bottom:1px solid var(–border);
-flex-shrink:0;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  flex-shrink:0;
 }
 .deck-back{
-background:transparent;border:1px solid var(–border2);
-border-radius:6px;color:var(–text2);font-size:.8rem;
-padding:6px 14px;cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;
-transition:all .15s;
+  background:transparent;border:1px solid var(--border2);
+  border-radius:6px;color:var(--text2);font-size:.8rem;
+  padding:6px 14px;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  transition:all .15s;
 }
-.deck-back:hover{color:var(–text);border-color:var(–border)}
+.deck-back:hover{color:var(--text);border-color:var(--border)}
 .deck-detail-img{
-flex-shrink:0;background:var(–bg2);
-display:flex;align-items:center;justify-content:center;
-padding:0;
+  flex-shrink:0;background:var(--bg2);
+  display:flex;align-items:center;justify-content:center;
+  padding:0;
 }
 .deck-detail-img img{
-width:100%;display:block;
+  width:100%;display:block;
 }
 .deck-detail-body{
-padding:12px 14px 40px;
-flex:1;
+  padding:12px 14px 40px;
+  flex:1;
 }
 
 /* ── LOADING SCREEN ── */
 .loading-screen{
-position:fixed;inset:0;background:var(–bg);
-display:flex;flex-direction:column;align-items:center;justify-content:center;
-gap:20px;z-index:200;
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;z-index:200;
 }
-.loading-screen h2{font-family:‘Orbitron’,sans-serif;font-size:1.5rem;letter-spacing:4px;color:var(–gold);text-shadow:0 0 24px var(–gold-dim)}
-.loading-bar-wrap{width:300px;height:6px;background:var(–surface2);border-radius:3px;overflow:hidden}
-.loading-bar{height:100%;background:linear-gradient(90deg,var(–blue),var(–gold));border-radius:3px;width:0%;transition:width .3s ease}
-.loading-msg{font-size:.82rem;color:var(–text3);letter-spacing:.5px}
+.loading-screen h2{font-family:'Orbitron',sans-serif;font-size:1.5rem;letter-spacing:4px;color:var(--gold);text-shadow:0 0 24px var(--gold-dim)}
+.loading-bar-wrap{width:300px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--gold));border-radius:3px;width:0%;transition:width .3s ease}
+.loading-msg{font-size:.82rem;color:var(--text3);letter-spacing:.5px}
 .loading-err{
-background:rgba(224,48,64,.1);border:1px solid var(–red);
-border-radius:8px;padding:16px 24px;max-width:460px;
-font-size:.82rem;color:#ffaaaa;line-height:1.8;text-align:center;
-display:none;
+  background:rgba(224,48,64,.1);border:1px solid var(--red);
+  border-radius:8px;padding:16px 24px;max-width:460px;
+  font-size:.82rem;color:#ffaaaa;line-height:1.8;text-align:center;
+  display:none;
 }
-.loading-err code{color:var(–gold);font-size:.85rem;display:block;margin-top:6px;word-break:break-all}
+.loading-err code{color:var(--gold);font-size:.85rem;display:block;margin-top:6px;word-break:break-all}
 .btn-retry{
-margin-top:8px;padding:8px 20px;
-background:transparent;border:1px solid var(–red);
-border-radius:6px;color:var(–red);cursor:pointer;
-font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all .15s;
+  margin-top:8px;padding:8px 20px;
+  background:transparent;border:1px solid var(--red);
+  border-radius:6px;color:var(--red);cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:.82rem;transition:all .15s;
 }
 .btn-retry:hover{background:rgba(224,48,64,.15)}
 </style>
-
 </head>
 <body>
 
 <!-- LOADING SCREEN（自動載入，不需手動選檔）-->
-
 <div class="loading-screen" id="loadingScreen">
   <div class="pokeball" style="width:52px;height:52px"></div>
   <h2>POKÉMON CARD DEX</h2>
@@ -540,7 +537,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
 </div>
 
 <!-- TOPBAR -->
-
 <div class="topbar">
   <div style="display:flex;align-items:center;gap:10px">
     <div class="pokeball"></div>
@@ -659,7 +655,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   </aside>
 
   <!-- CENTER（縮圖列表）-->
-
   <main class="center">
     <div class="result-bar">
       <span class="rcount" id="rlabel">— 0 RESULTS —</span>
@@ -685,13 +680,11 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
   </main>
 
   <!-- BIG IMAGE -->
-
   <div class="bigimg-panel" id="bigimgPanel">
     <div class="bigimg-empty"><div class="empty-ball"></div><span>點擊卡片查看大圖</span></div>
   </div>
 
   <!-- RIGHT（詳情）-->
-
   <aside class="right">
     <div class="dtop" id="dtop">
       <div class="dname">卡牌詳情</div>
@@ -704,7 +697,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
 </div>
 
 <!-- 浮動上下捲動按鈕（手機模式才顯示）-->
-
 <div class="scroll-btns" id="scrollBtns">
   <button class="scroll-btn" id="scrollTopBtn" title="回到最上方">↑</button>
   <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
@@ -712,7 +704,6 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
 </div>
 
 <!-- 頁尾 -->
-
 <footer class="site-footer">
   <p>本站為熱愛 PTCG 的粉絲自製非營利專案，旨在推廣寶可夢集換式卡牌實體遊戲。</p>
   <p>所有卡牌圖像、文字與商標之智慧財產權均歸屬 The Pokémon Company、Nintendo、Creatures Inc. 及 GAME FREAK inc. 所有。</p>
@@ -721,46 +712,43 @@ font-family:‘Zen Kaku Gothic New’,sans-serif;font-size:.82rem;transition:all
 </footer>
 
 <!-- 牌組查詢抽屜 -->
-
 <div class="deck-drawer" id="deckDrawer">
   <div class="deck-backdrop" id="deckBackdrop"></div>
   <div class="deck-panel">
 
-```
-<div class="deck-panel-hdr">
-  🃏 DECK VIEWER
-  <button class="deck-close" id="deckClose">✕</button>
-</div>
+    <div class="deck-panel-hdr">
+      🃏 DECK VIEWER
+      <button class="deck-close" id="deckClose">✕</button>
+    </div>
 
-<div class="deck-input-area">
-  <div class="deck-region-tabs">
-    <div class="rtab on" data-region="tw">🇹🇼 台灣版</div>
-    <div class="rtab" data-region="jp">🇯🇵 日本版</div>
-  </div>
-  <div class="deck-input-row">
-    <input class="deck-code-input" id="deckCodeInput"
-      placeholder="輸入牌組代碼，例如 pghWwG-psGbro-ViVgUc"/>
-    <button class="btn-deck-fetch" id="deckFetchBtn">查詢</button>
-  </div>
-  <div class="deck-status" id="deckStatus"></div>
-</div>
+    <div class="deck-input-area">
+      <div class="deck-region-tabs">
+        <div class="rtab on" data-region="tw">🇹🇼 台灣版</div>
+        <div class="rtab" data-region="jp">🇯🇵 日本版</div>
+      </div>
+      <div class="deck-input-row">
+        <input class="deck-code-input" id="deckCodeInput"
+          placeholder="輸入牌組代碼，例如 pghWwG-psGbro-ViVgUc"/>
+        <button class="btn-deck-fetch" id="deckFetchBtn">查詢</button>
+      </div>
+      <div class="deck-status" id="deckStatus"></div>
+    </div>
 
-<div class="deck-list" id="deckList">
-  <div class="deck-empty">
-    <span style="font-size:2rem">🃏</span>
-    <span>輸入牌組代碼後查詢</span>
-  </div>
-</div>
+    <div class="deck-list" id="deckList">
+      <div class="deck-empty">
+        <span style="font-size:2rem">🃏</span>
+        <span>輸入牌組代碼後查詢</span>
+      </div>
+    </div>
 
-<!-- 抽屜內的卡牌詳情（點卡片後顯示）-->
-<div class="deck-detail" id="deckDetail" style="display:none">
-  <div class="deck-detail-hdr">
-    <button class="deck-back" id="deckBack">← 返回牌組</button>
-  </div>
-  <div class="deck-detail-img" id="deckDetailImg"></div>
-  <div class="deck-detail-body" id="deckDetailBody"></div>
-</div>
-```
+    <!-- 抽屜內的卡牌詳情（點卡片後顯示）-->
+    <div class="deck-detail" id="deckDetail" style="display:none">
+      <div class="deck-detail-hdr">
+        <button class="deck-back" id="deckBack">← 返回牌組</button>
+      </div>
+      <div class="deck-detail-img" id="deckDetailImg"></div>
+      <div class="deck-detail-body" id="deckDetailBody"></div>
+    </div>
 
   </div>
 </div>
@@ -923,15 +911,141 @@ function splitCSVRows(txt){
 // ─── LOAD ────────────────────────────────────────────────
 function loadCards(cards){
   ALL=cards;
+  // Debug：確認 evolution_chain 欄位是否正確載入
+  const sample = cards.find(c=>c.name==='鐵殼蛹'||c.name==='獨角蟲'||c.name==='呱呱泡蛙');
+  if(sample){
+    console.log('DEBUG sample card:', sample.name,
+      '| evolution_chain:', sample.evolution_chain,
+      '| illustrator:', sample.illustrator,
+      '| pokedex_no:', sample.pokedex_no);
+    console.log('DEBUG all keys:', Object.keys(sample).join(', '));
+  }
   buildOpts();
   document.getElementById('totalCnt').textContent=cards.length;
   doSearch();
 }
 function buildOpts(){
   const types=[...new Set(ALL.map(c=>c.card_type).filter(Boolean))].sort();
-  const sets =[...new Set(ALL.map(c=>c.set_name).filter(Boolean))].sort();
   const regs =[...new Set(ALL.map(c=>c.regulation).filter(Boolean))].sort();
-  fillSel('fType',types);fillSel('fSet',sets);fillSel('fReg',regs);
+
+  // 擴充包：依官網發售日排序（最新在最上面）
+  // 更新日期：2026/06/02
+  const SET_ORDER = [
+    '擴充包「深淵之瞳」',           // 2026-06-05 ← 最新（尚未爬取）
+    '擴充包「忍者飛旋」',           // 2026-03-27
+    'New Trainer Journey',          // 2026-02-26
+    '擴充包「虛無歸零」',           // 2026-02-06
+    '初階牌組 100對戰收藏',         // 2026-01-16
+    '高級擴充包「超級進化夢想ex」', // 2025-12-05
+    '擴充包「烈獄狂火X」',          // 2025-10-09
+    '挑戰牌組「超級耿鬼ex」',       // 2025-09-19
+    '特典卡 超級進化',              // 2025-xx-xx
+    '擴充包「紫ex」',               // 2025-xx-xx
+    '擴充包「變幻假面」',           // 2025-xx-xx
+    '強化擴充包「緋紅薄霧」',       // 2025-xx-xx
+    '擴充包「異度審判」',           // 2025-xx-xx
+    '強化擴充包「三連音爆」',       // 2025-xx-xx
+    '擴充包「狂野之力」',
+    '擴充包「超級交響樂」',
+    '擴充包「超級勇氣」',
+    '挑戰牌組 「超級蒂安希ex」',
+    '挑戰牌組 大吾的鐵啞鈴&巨金怪ex',
+    '挑戰牌組 瑪俐的莫魯貝可&長毛巨魔ex',
+    '擴充包 「純白閃焰」',
+    '擴充包「漆黑伏特」',
+    'ex初階牌組 噴火龍',
+    'ex初階牌組 皮卡丘',
+    '擴充包「火箭隊的榮耀」',
+    '強化擴充包「熱風競技場」',
+    '擴充包「對戰搭檔」',
+    '高級擴充包「太晶慶典ex」',
+    '雙ex初階牌組 Generations',
+    '擴充包「超電突圍」',
+    '戰術牌組「太晶噴火龍ex」',
+    '戰術牌組「魔幻假面喵ex」',
+    '戰術牌組「太晶烈咬陸鯊ex」',
+    '戰術牌組「密勒頓ex」',
+    '戰術牌組「沙奈朵ex」',
+    '戰術牌組「巨鉗螳螂ex」',
+    '起始組合「古代故勒頓ex」',
+    '起始組合「未來密勒頓ex」',
+    '高級擴充包「閃色寶藏ex」',
+    '起始組合 太晶 骨紋巨聲鱷ex',
+    '起始組合 太晶 超夢ex',
+    '牌組構築BOX黯焰支配者',
+    '擴充包「星晶奇跡」',
+    '強化擴充包「樂園騰龍」',
+    '牌組構築BOX 樂園騰龍',
+    'Trianers Camp',
+    '擴充包「蒼空烈流」',
+    '擴充包「星星誕生」',
+    '特典卡 朱&紫',
+    'ex初階牌組',
+    '強化擴充包「白熱奧祕」',
+    '強化擴充包「黑夜漫遊者」',
+    '強化擴充包「激狂駭浪」',
+    '頂級訓練家收藏箱ex',
+    'VSTAR&VMAX 高級牌組 代歐奇希斯',
+    'VSTAR&VMAX 高級牌組 捷拉奧拉',
+    '起始組合ex 呆火鱷&電龍 ex',
+    '起始組合ex 新葉喵&路卡利歐 ex',
+    '起始組合ex 潤水鴨&謎擬Ｑ ex',
+    '起始組合ex 皮卡丘特別組合',
+    'ex特別組合 太晶屬性：星晶 仙子伊布ex',
+    'ex特別組合 太晶屬性：星晶 蒼炎刃鬼ex',
+    '高級擴充包「VMAX絕群壓軸」',
+    '高級擴充包「天地萬物VSTAR」',
+    '高級擴充包「閃色明星V」',
+    '特別牌組組合 「噴火龍VSTAR vs 烈空坐VMAX」',
+    '特別牌組組合 蒼響・藏瑪然特VS無極汰那',
+    '頂級訓練家收藏箱 VSTAR',
+    '起始組合VSTAR 路卡利歐',
+    '起始組合VSTAR 達克萊伊',
+    '強化擴充包「寶可夢卡牌151」',
+    '強化擴充包「Pokémon GO」',
+    '擴充包「雙倍爆擊」SET A',
+    '擴充包「雙倍爆擊」SET B',
+    '擴充包「連撃大師」',
+    '擴充包「眾星雲集組合篇」SET A',
+    '擴充包「眾星雲集組合篇」SET B',
+    '擴充包「美夢成真組合篇」SET A',
+    '擴充包「美夢成真組合篇」SET B',
+    '擴充包「傳說交鋒」SET B',
+    'G超起始牌組「傳說交鋒」',
+    'G超起始牌組「眾星雲集組合篇」',
+    'G超起始牌組「美夢成真組合篇」',
+    'G超起始牌組「雙倍爆擊」',
+    '擴充包「劍&盾」SET A',
+    '擴充包「劍&盾」SET B',
+    'V起始牌組「劍&盾」',
+    'V起始牌組「無極力量」',
+    'V起始牌組 「強大」',
+    'V起始牌組 「挑戰」',
+    'V起始牌組 「搭檔」',
+    'V起始牌組 「進化」',
+    'V初階牌組 「噴火龍」',
+    'V初階牌組 「皮卡丘」',
+    'V初階牌組 「超夢」',
+    '特典卡 劍&盾',
+    '初階牌組100',
+    '初階牌組100 特別版',
+    '寶可夢卡牌家庭組合',
+  ];
+
+  // 先依照 SET_ORDER，再把沒列到的包（card_id 降序）接在後面
+  const allSets = [...new Set(ALL.map(c=>c.set_name).filter(Boolean))];
+  const setMaxId = {};
+  ALL.forEach(c=>{
+    if(!c.set_name) return;
+    const id = parseInt(c.card_id)||0;
+    if(!setMaxId[c.set_name] || id > setMaxId[c.set_name]) setMaxId[c.set_name] = id;
+  });
+  const ordered = [
+    ...SET_ORDER.filter(s=> allSets.includes(s)),
+    ...allSets.filter(s=> !SET_ORDER.includes(s)).sort((a,b)=> setMaxId[b]-setMaxId[a]),
+  ];
+
+  fillSel('fType',types);fillSel('fSet',ordered);fillSel('fReg',regs);
 }
 function fillSel(id,opts){
   const el=document.getElementById(id);
@@ -1057,7 +1171,16 @@ function applySort(){
   if(dedup){
     const seen = new Set();
     display = FILTERED.filter(c=>{
-      const key = (c.name||'') + '||' + (c.abilities||'') + '||' + (c.attacks||'');
+      // 正規化 attacks：去掉所有版本的通用規則文字，只保留核心效果
+      function normalizeAtk(s){
+        return (s||'')
+          .replace(/\s*[|｜]\s*在自己的回合時，物品卡可不限張數使用。?/g,'')
+          .replace(/\s*[|｜]\s*在自己的回合時，支援者卡只可使用1張。?/g,'')
+          .replace(/\s*[|｜]\s*在自己的回合時，只可將1張競技場卡放置於戰鬥場[^|｜]*/g,'')
+          .replace(/\s*[|｜]\s*「[^」]+」只可\d+張同時使用。?/g,'')
+          .trim();
+      }
+      const key = (c.name||'') + '||' + (c.abilities||'') + '||' + normalizeAtk(c.attacks);
       if(seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -1902,6 +2025,5 @@ applyMode();
 // ─── 啟動 ───────────────────────────────────────────────
 autoLoad();
 </script>
-
 </body>
 </html>
