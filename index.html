@@ -39,7 +39,14 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;gap:14px;padding:8px 20px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border)}
+.topbar{display:flex;align-items:center;gap:10px;padding:6px 14px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.topbar-row2{display:contents}
+/* 手機：列印按鈕自動換第二行 */
+@media(max-width:600px){
+  .topbar{padding:6px 10px;row-gap:6px}
+  .topbar-row2{display:flex;width:100%;gap:8px;align-items:center}
+  .btn-print{flex:1;text-align:center}
+}
 .pokeball{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:conic-gradient(var(--red) 180deg,#fff 180deg);border:2px solid #fff;box-shadow:0 0 0 2px var(--blue),0 0 14px var(--blue-dim);position:relative}
 .pokeball::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#fff;border-radius:50%;border:2px solid #222}
 .logo-text{font-family:'Orbitron',sans-serif;font-size:1.1rem;letter-spacing:3px;color:var(--gold);text-shadow:0 0 16px var(--gold-dim)}
@@ -554,10 +561,10 @@ body.mobile .scroll-btns{display:flex}
   letter-spacing:2px;color:#50d080;margin-bottom:10px;
 }
 .print-qty-row{
-  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;flex-wrap:wrap;
 }
-.print-qty-label{font-size:.8rem;color:var(--text3);flex-shrink:0}
-.print-qty-btns{display:flex;gap:5px}
+.print-qty-label{font-size:.8rem;color:var(--text3);flex-shrink:0;padding-top:6px}
+.print-qty-btns{display:flex;gap:5px;flex-wrap:wrap;flex:1}
 .qty-btn{
   width:32px;height:32px;border-radius:7px;
   background:var(--surface2);border:1px solid var(--border2);
@@ -567,6 +574,16 @@ body.mobile .scroll-btns{display:flex}
 }
 .qty-btn.on{background:#1a4028;border-color:#50d080;color:#50d080}
 .qty-btn:hover:not(.on){border-color:var(--text2);color:var(--text)}
+.qty-custom{
+  width:52px;height:32px;border-radius:7px;
+  background:var(--surface2);border:1px solid var(--border2);
+  color:var(--text);font-size:.85rem;font-weight:700;
+  text-align:center;padding:0 6px;outline:none;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  transition:border-color .15s;
+}
+.qty-custom:focus{border-color:#50d080}
+.qty-custom::placeholder{color:var(--text3);font-size:.72rem;font-weight:400}
 .btn-add-to-print{
   width:100%;padding:11px;
   background:linear-gradient(135deg,#1a5030,#0f3020);
@@ -705,7 +722,9 @@ body.mobile .scroll-btns{display:flex}
   </div>
   <button class="btn-mode" id="modeBtn">📱 手機版</button>
   <button class="btn-deck" id="deckBtn">🃏 牌組查詢</button>
-  <button class="btn-print" id="printListBtn">🖨️ 列印清單<span class="print-badge hidden" id="printBadge">0</span></button>
+  <div class="topbar-row2">
+    <button class="btn-print" id="printListBtn">🖨️ 列印清單<span class="print-badge hidden" id="printBadge">0</span></button>
+  </div>
   <div class="topbar-stats">
     已載入 <b id="totalCnt">0</b> 張　搜尋結果 <b id="resultCnt">0</b> 張
   </div>
@@ -1580,16 +1599,21 @@ function renderDetail(c){
     </div>`;
   }
 
+  // ★ 語音朗讀按鈕（在列印清單上方）
+  html += `<div style="margin-top:16px">
+    <button class="btn-speak" id="speakBtn" onclick="speakCard()">
+      🔊 朗讀卡片資訊
+    </button>
+  </div>`;
+
   // ★ 加入列印清單
-  html += `<div class="print-add-block">
+  html += `<div class="print-add-block" style="margin-bottom:24px">
     <div class="print-add-title">🖨️ 加入列印清單</div>
     <div class="print-qty-row">
       <span class="print-qty-label">數量：</span>
-      <div class="print-qty-btns">
-        <button class="qty-btn on" data-q="1" onclick="setPrintQty(this,1)">1</button>
-        <button class="qty-btn" data-q="2" onclick="setPrintQty(this,2)">2</button>
-        <button class="qty-btn" data-q="3" onclick="setPrintQty(this,3)">3</button>
-        <button class="qty-btn" data-q="4" onclick="setPrintQty(this,4)">4</button>
+      <div class="print-qty-btns" id="printQtyBtns">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="qty-btn${n===1?' on':''}" data-q="${n}" onclick="setPrintQty(this,${n})">${n}</button>`).join('')}
+        <input class="qty-custom" id="qtyCustom" type="number" min="1" max="99" placeholder="其他" oninput="setCustomQty(this)">
       </div>
     </div>
     <button class="btn-add-to-print" id="btn-add-to-print-main" onclick="addToPrintList(window._speakCard, window._printQty||1)">
@@ -1597,13 +1621,6 @@ function renderDetail(c){
     </button>
   </div>`;
   window._printQty = 1;
-
-  // ★ 語音朗讀按鈕
-  html += `<div style="margin-top:16px;padding-bottom:20px">
-    <button class="btn-speak" id="speakBtn" onclick="speakCard()">
-      🔊 朗讀卡片資訊
-    </button>
-  </div>`;
 
   document.getElementById('dbody').innerHTML = html;
   window._speakCard = c;
@@ -2247,6 +2264,17 @@ function setPrintQty(btn, q){
   document.querySelectorAll('.qty-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   window._printQty = q;
+  // 清空自定義輸入
+  const ci = document.getElementById('qtyCustom');
+  if(ci) ci.value = '';
+}
+
+function setCustomQty(input){
+  const v = parseInt(input.value);
+  if(v > 0){
+    document.querySelectorAll('.qty-btn').forEach(b=>b.classList.remove('on'));
+    window._printQty = v;
+  }
 }
 
 function addToPrintList(card, qty){
