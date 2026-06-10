@@ -699,92 +699,117 @@ body.mobile .scroll-btns{display:flex}
 /* ── 列印覆蓋層 ── */
 #printOverlay{
   display:none;
-  position:fixed;inset:0;z-index:999;
-  background:#e8e8e8;
+  position:fixed;inset:0;z-index:9999;
+  background:#e0e0e0;
   overflow-y:auto;
-  padding:16px 0 40px;
+  -webkit-overflow-scrolling:touch;
 }
+#printOverlay.active{ display:block }
 .po-ctrl{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  max-width:210mm;margin:0 auto 14px;
-  background:#fff;border:1px solid #ddd;border-radius:10px;
+  max-width:230mm;margin:12px auto;
+  background:#fff;border:1px solid #ccc;border-radius:10px;
   padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 .po-ctrl span{flex:1;font-size:.9rem;font-weight:700;color:#222}
 .po-ctrl button{
   padding:8px 14px;border-radius:7px;font-size:.85rem;
-  cursor:pointer;border:1px solid #ddd;background:#fff;color:#555;
+  cursor:pointer;border:1px solid #ccc;background:#fff;color:#555;
 }
 .po-btn-print{
   background:#3060e0!important;border-color:#3060e0!important;
   color:#fff!important;font-weight:700!important;
 }
-#printOverlay .pc-page{
-  width:210mm;height:297mm;background:#fff;
-  margin:0 auto 16px;
+/* A4 頁面容器 */
+.po-page{
+  width:210mm;
+  min-height:297mm;
+  background:#fff;
+  margin:0 auto 12px;
   box-shadow:0 3px 16px rgba(0,0,0,.15);
-  position:relative;display:flex;align-items:center;justify-content:center;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
 }
-#printOverlay .pc-grid{
+/* 3×3 格子 */
+.po-grid{
   display:grid;
   grid-template-columns:repeat(3,63mm);
   grid-template-rows:repeat(3,88mm);
   position:relative;
+  background:#fff;
 }
-#printOverlay .pc-grid::after{
+.po-grid::after{
   content:'';position:absolute;inset:0;pointer-events:none;
   background-image:
-    linear-gradient(to right,transparent calc(63mm - .2mm),#ccc calc(63mm - .2mm),#ccc 63mm,transparent 63mm),
-    linear-gradient(to right,transparent calc(126mm - .2mm),#ccc calc(126mm - .2mm),#ccc 126mm,transparent 126mm),
-    linear-gradient(to bottom,transparent calc(88mm - .2mm),#ccc calc(88mm - .2mm),#ccc 88mm,transparent 88mm),
-    linear-gradient(to bottom,transparent calc(176mm - .2mm),#ccc calc(176mm - .2mm),#ccc 176mm,transparent 176mm);
+    linear-gradient(to right,transparent calc(63mm - .3mm),#bbb calc(63mm - .3mm),#bbb 63mm,transparent 63mm),
+    linear-gradient(to right,transparent calc(126mm - .3mm),#bbb calc(126mm - .3mm),#bbb 126mm,transparent 126mm),
+    linear-gradient(to bottom,transparent calc(88mm - .3mm),#bbb calc(88mm - .3mm),#bbb 88mm,transparent 88mm),
+    linear-gradient(to bottom,transparent calc(176mm - .3mm),#bbb calc(176mm - .3mm),#bbb 176mm,transparent 176mm);
 }
-#printOverlay .pc-slot{
-  width:63mm;height:88mm;overflow:hidden;
+.po-slot{
+  width:63mm;height:88mm;
+  overflow:hidden;
   display:flex;align-items:center;justify-content:center;
   background:#fff;
 }
-#printOverlay .pc-slot img{
-  width:100%;height:100%;object-fit:contain;display:block;
+.po-slot img{
+  width:100%;height:100%;
+  object-fit:contain;display:block;
   background:#fff;
-  /* 強制白底，防止 PNG 透明區域變黑 */
-  -webkit-filter:none;
-  filter:none;
-  mix-blend-mode:normal;
-  isolation:isolate;
 }
-#printOverlay .pc-slot.pc-empty{background:#f9f9f9}
-#printOverlay .pc-noimg{
-  width:100%;height:100%;display:flex;align-items:center;
-  justify-content:center;font-size:8pt;color:#aaa;
-  text-align:center;padding:6px;background:#f0f0f0;
+.po-slot.po-empty{ background:#f5f5f5 }
+.po-noimg{
+  width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8pt;color:#aaa;text-align:center;padding:6px;
+  background:#eee;
 }
-#printOverlay .pc-page-num{
-  position:absolute;bottom:4mm;right:7mm;font-size:7pt;color:#bbb;
+.po-pagenum{
+  position:absolute;bottom:4mm;right:7mm;
+  font-size:7pt;color:#bbb;
 }
 
-/* ── @media print：只印 overlay ── */
+/* ── @media print ── */
 @media print{
-  html, body{
-    background:#fff!important;
-    color:#000!important;
-  }
-  body > *:not(#printOverlay){ display:none!important }
+  /* 隱藏整個 body 內容，只留 overlay */
+  body *{ visibility:hidden }
+  #printOverlay,
+  #printOverlay *{ visibility:visible }
+
   #printOverlay{
+    position:fixed!important;
+    inset:0!important;
+    overflow:visible!important;
+    background:#fff!important;
     display:block!important;
-    position:static!important;overflow:visible!important;
-    background:#fff!important;padding:0!important;
+    padding:0!important;
+    margin:0!important;
   }
   .po-ctrl{ display:none!important }
-  #printOverlay .pc-page{
-    box-shadow:none!important;margin:0!important;background:#fff!important;
-    page-break-after:always;break-after:page;
-    width:210mm!important;height:297mm!important;
+  .po-page{
+    box-shadow:none!important;
+    margin:0!important;
+    background:#fff!important;
+    width:210mm!important;
+    height:297mm!important;
+    min-height:unset!important;
+    page-break-after:always!important;
+    break-after:page!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden!important;
   }
-  #printOverlay .pc-page:last-child{page-break-after:avoid;break-after:avoid}
-  #printOverlay .pc-slot{background:#fff!important}
-  #printOverlay .pc-slot img{background:#fff!important}
-  #printOverlay .pc-grid{background:#fff!important}
+  .po-page:last-child{
+    page-break-after:avoid!important;
+    break-after:avoid!important;
+  }
+  .po-grid{ background:#fff!important }
+  .po-slot{ background:#fff!important }
+  .po-slot img{ background:#fff!important }
 }
 
 /* ── 右欄底部列印快捷列 ── */
@@ -2522,15 +2547,15 @@ function generatePrintPage(){
   const pagesHTML = pages.map((pg, pi)=>{
     const cells = Array.from({length:PER_PAGE},(_,ci)=>{
       const card = pg[ci];
-      if(!card) return `<div class="pc-slot pc-empty"></div>`;
-      return `<div class="pc-slot">${card.image_url
+      if(!card) return `<div class="po-slot po-empty"></div>`;
+      return `<div class="po-slot">${card.image_url
         ? `<img src="${card.image_url}" alt="${esc(card.name||'')}">`
-        : `<div class="pc-noimg">${esc(card.name||'—')}</div>`
+        : `<div class="po-noimg">${esc(card.name||'—')}</div>`
       }</div>`;
     }).join('');
-    return `<div class="pc-page">
-      <div class="pc-grid">${cells}</div>
-      ${totalPages>1?`<div class="pc-page-num">${pi+1} / ${totalPages}</div>`:''}
+    return `<div class="po-page">
+      <div class="po-grid">${cells}</div>
+      ${totalPages>1?`<div class="po-pagenum">${pi+1} / ${totalPages}</div>`:''}
     </div>`;
   }).join('');
 
@@ -2543,19 +2568,19 @@ function generatePrintPage(){
   }
   overlay.innerHTML = `
     <div class="po-ctrl" id="poCtrl">
-      <span>🖨️ 共 ${totalCards} 張 · ${totalPages} 頁</span>
+      <span>🖨️ 共 ${totalCards} 張 · ${totalPages} 頁 A4</span>
       <button onclick="closePrintOverlay()">✕ 關閉</button>
       <button class="po-btn-print" onclick="window.print()">🖨️ 列印 / 另存 PDF</button>
     </div>
     ${pagesHTML}
   `;
-  overlay.style.display = 'block';
+  overlay.classList.add('active');
   document.body.style.overflow = 'hidden';
 }
 
 function closePrintOverlay(){
   const o = document.getElementById('printOverlay');
-  if(o){ o.style.display='none'; o.innerHTML=''; }
+  if(o){ o.classList.remove('active'); o.innerHTML=''; }
   document.body.style.overflow = '';
 }
 
