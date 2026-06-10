@@ -741,9 +741,18 @@ body.mobile .scroll-btns{display:flex}
 }
 #printOverlay .pc-slot{
   width:63mm;height:88mm;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;
 }
-#printOverlay .pc-slot img{width:100%;height:100%;object-fit:contain;display:block}
+#printOverlay .pc-slot img{
+  width:100%;height:100%;object-fit:contain;display:block;
+  background:#fff;
+  /* 強制白底，防止 PNG 透明區域變黑 */
+  -webkit-filter:none;
+  filter:none;
+  mix-blend-mode:normal;
+  isolation:isolate;
+}
 #printOverlay .pc-slot.pc-empty{background:#f9f9f9}
 #printOverlay .pc-noimg{
   width:100%;height:100%;display:flex;align-items:center;
@@ -756,6 +765,10 @@ body.mobile .scroll-btns{display:flex}
 
 /* ── @media print：只印 overlay ── */
 @media print{
+  html, body{
+    background:#fff!important;
+    color:#000!important;
+  }
   body > *:not(#printOverlay){ display:none!important }
   #printOverlay{
     display:block!important;
@@ -770,6 +783,8 @@ body.mobile .scroll-btns{display:flex}
   }
   #printOverlay .pc-page:last-child{page-break-after:avoid;break-after:avoid}
   #printOverlay .pc-slot{background:#fff!important}
+  #printOverlay .pc-slot img{background:#fff!important}
+  #printOverlay .pc-grid{background:#fff!important}
 }
 
 /* ── 右欄底部列印快捷列 ── */
