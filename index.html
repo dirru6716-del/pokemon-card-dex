@@ -997,7 +997,7 @@ body.mobile .scroll-btns{display:flex}
         <span>已選 <b id="printKindCnt">0</b> 種</span>
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
-      <button class="btn-print-pdf" id="doPrintBtn">📄 下載 A4 PDF</button>
+      <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 列印頁面</button>
       <button class="btn-print-clear" id="printClearBtn">✕ 清空清單</button>
     </div>
   </div>
@@ -2412,155 +2412,175 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
   if(confirm('確定清空列印清單？')) { PRINT_LIST=[]; updatePrintBadge(); renderPrintList(); }
 });
 
-// ── 產生 PDF（jsPDF + 直接下載）────────────────────────
-document.getElementById('doPrintBtn').addEventListener('click', generatePDF);
+// ── 產生列印分頁 ─────────────────────────────────────────
+document.getElementById('doPrintBtn').addEventListener('click', generatePrintPage);
 
-async function generatePDF(){
+function generatePrintPage(){
   if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
 
-  // 展開卡片
   const expanded = [];
   PRINT_LIST.forEach(item=>{
     for(let i=0;i<item.qty;i++) expanded.push(item.card);
   });
 
-  // 更新按鈕狀態
-  const btn = document.getElementById('doPrintBtn');
-  btn.textContent = '⏳ 產生中，請稍候...';
-  btn.disabled = true;
-
-  try {
-    // 動態載入 jsPDF
-    if(!window.jspdf){
-      await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-    }
-    const { jsPDF } = window.jspdf;
-
-    // A4 尺寸 (mm)
-    const PAGE_W = 210, PAGE_H = 297;
-    const COLS = 3, ROWS = 3;
-    const CARD_W = 63, CARD_H = 88;
-    // 置中：左右留白
-    const MARGIN_X = (PAGE_W - COLS * CARD_W) / 2; // 10.5mm
-    const MARGIN_Y = (PAGE_H - ROWS * CARD_H) / 2; // 13.5mm
-    const PER_PAGE = COLS * ROWS;
-
-    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-
-    let cardIdx = 0;
-    const totalPages = Math.ceil(expanded.length / PER_PAGE);
-
-    for(let page = 0; page < totalPages; page++){
-      if(page > 0) pdf.addPage();
-
-      // 白底
-      pdf.setFillColor(255,255,255);
-      pdf.rect(0, 0, PAGE_W, PAGE_H, 'F');
-
-      // 裁切線（淡灰）
-      pdf.setDrawColor(180,180,180);
-      pdf.setLineWidth(0.1);
-      for(let c=1;c<COLS;c++){
-        const x = MARGIN_X + c*CARD_W;
-        pdf.line(x, 0, x, PAGE_H);
-      }
-      for(let r=1;r<ROWS;r++){
-        const y = MARGIN_Y + r*CARD_H;
-        pdf.line(0, y, PAGE_W, y);
-      }
-
-      // 放卡片圖片
-      const slots = expanded.slice(page*PER_PAGE, (page+1)*PER_PAGE);
-      for(let si=0; si<slots.length; si++){
-        const card = slots[si];
-        const col = si % COLS;
-        const row = Math.floor(si / COLS);
-        const x = MARGIN_X + col * CARD_W;
-        const y = MARGIN_Y + row * CARD_H;
-
-        btn.textContent = `⏳ 處理中 ${page*PER_PAGE+si+1}/${expanded.length}...`;
-
-        if(card.image_url){
-          try{
-            const dataUrl = await loadImageAsDataURL(card.image_url);
-            pdf.addImage(dataUrl, 'JPEG', x, y, CARD_W, CARD_H);
-          }catch(e){
-            // 圖片載入失敗：灰框 + 卡名
-            pdf.setFillColor(235,235,235);
-            pdf.rect(x, y, CARD_W, CARD_H, 'F');
-            pdf.setTextColor(120,120,120);
-            pdf.setFontSize(7);
-            const name = card.name || '—';
-            pdf.text(name, x + CARD_W/2, y + CARD_H/2, {align:'center', maxWidth: CARD_W-4});
-          }
-        } else {
-          pdf.setFillColor(235,235,235);
-          pdf.rect(x, y, CARD_W, CARD_H, 'F');
-        }
-      }
-
-      // 頁碼
-      if(totalPages > 1){
-        pdf.setTextColor(180,180,180);
-        pdf.setFontSize(7);
-        pdf.text(`${page+1} / ${totalPages}`, PAGE_W-8, PAGE_H-4, {align:'right'});
-      }
-    }
-
-    pdf.save(`pokemon_cards_${expanded.length}張.pdf`);
-    btn.textContent = '✅ PDF 已下載！';
-    setTimeout(()=>{ btn.textContent='📄 產生 A4 列印頁面'; btn.disabled=false; }, 2500);
-
-  } catch(err){
-    console.error(err);
-    alert('PDF 產生失敗：' + err.message);
-    btn.textContent = '📄 產生 A4 列印頁面';
-    btn.disabled = false;
+  const PER_PAGE = 9;
+  const pages = [];
+  for(let i=0;i<expanded.length;i+=PER_PAGE){
+    pages.push(expanded.slice(i,i+PER_PAGE));
   }
+  const totalCards = expanded.length;
+  const totalPages = pages.length;
+
+  const pagesHTML = pages.map((pg, pi)=>{
+    const cells = Array.from({length:PER_PAGE},(_,ci)=>{
+      const card = pg[ci];
+      if(!card) return `<div class="pc-slot pc-empty"></div>`;
+      return `<div class="pc-slot">${card.image_url
+        ? `<img src="${card.image_url}" alt="${card.name||''}">`
+        : `<div class="pc-noimg">${card.name||'—'}</div>`
+      }</div>`;
+    }).join('');
+    return `<div class="pc-page">
+      <div class="pc-grid">${cells}</div>
+      ${totalPages>1?`<div class="pc-page-num">${pi+1} / ${totalPages}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const printHTML = `<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light">
+<title>寶可夢卡牌列印 — ${totalCards}張</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:#f5f5f5;color:#222;
+  font-family:'Noto Sans TC',sans-serif;
+  display:flex;flex-direction:column;align-items:center;
+  padding:16px 0 40px;gap:16px;
+}
+
+/* ── iOS 操作提示 ── */
+.ios-guide{
+  max-width:210mm;width:calc(100% - 24px);
+  background:#fff8e1;border:2px solid #f0a500;border-radius:12px;
+  padding:14px 16px;
+}
+.ios-guide-title{
+  font-size:.9rem;font-weight:700;color:#b36a00;
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.ios-guide ol{
+  padding-left:18px;display:flex;flex-direction:column;gap:6px;
+}
+.ios-guide li{font-size:.82rem;color:#555;line-height:1.5}
+.ios-guide li b{color:#333}
+.ios-guide-note{
+  margin-top:10px;padding:8px 10px;
+  background:#fff3cd;border-radius:7px;
+  font-size:.75rem;color:#7a5000;
+}
+
+/* ── 控制列 ── */
+.ctrl-bar{
+  max-width:210mm;width:calc(100% - 24px);
+  background:#fff;border:1px solid #ddd;border-radius:10px;
+  padding:12px 16px;display:flex;align-items:center;
+  gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);flex-wrap:wrap;
+}
+.ctrl-title{font-size:.95rem;font-weight:700;color:#222;flex:1;min-width:120px}
+.ctrl-sub{font-size:.75rem;color:#999;width:100%;margin-top:2px}
+.btn-do-print{
+  padding:10px 20px;background:#3060e0;border:none;
+  border-radius:8px;color:#fff;font-size:.95rem;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+}
+.btn-close-print{
+  padding:10px 14px;background:#fff;border:1px solid #ddd;
+  border-radius:8px;color:#666;font-size:.85rem;cursor:pointer;
+}
+
+/* ── A4 頁面 ── */
+.pc-page{
+  width:210mm;height:297mm;
+  background:#fff;
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.pc-grid{
+  display:grid;
+  grid-template-columns:repeat(3,63mm);
+  grid-template-rows:repeat(3,88mm);
+  position:relative;
+}
+.pc-grid::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(to right,transparent calc(63mm - .2mm),#ccc calc(63mm - .2mm),#ccc 63mm,transparent 63mm),
+    linear-gradient(to right,transparent calc(126mm - .2mm),#ccc calc(126mm - .2mm),#ccc 126mm,transparent 126mm),
+    linear-gradient(to bottom,transparent calc(88mm - .2mm),#ccc calc(88mm - .2mm),#ccc 88mm,transparent 88mm),
+    linear-gradient(to bottom,transparent calc(176mm - .2mm),#ccc calc(176mm - .2mm),#ccc 176mm,transparent 176mm);
+}
+.pc-slot{width:63mm;height:88mm;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+.pc-slot img{width:100%;height:100%;object-fit:contain;display:block}
+.pc-slot.pc-empty{background:#f9f9f9}
+.pc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#aaa;text-align:center;padding:6px;background:#f0f0f0}
+.pc-page-num{position:absolute;bottom:4mm;right:7mm;font-size:7pt;color:#bbb}
+
+/* ── 列印模式 ── */
+@media print{
+  body{background:#fff!important;padding:0!important;gap:0!important}
+  .ios-guide,.ctrl-bar{display:none!important}
+  .pc-page{
+    box-shadow:none!important;background:#fff!important;
+    page-break-after:always;break-after:page;
+    width:210mm!important;height:297mm!important;
+  }
+  .pc-page:last-child{page-break-after:avoid;break-after:avoid}
+  .pc-slot{background:#fff!important}
+}
+</style>
+</head>
+<body>
+
+<!-- iOS 操作指引 -->
+<div class="ios-guide">
+  <div class="ios-guide-title">📱 iPhone 列印步驟</div>
+  <ol>
+    <li><b>先關閉暗色模式</b>：設定 → 顯示與亮度 → 選「淺色」</li>
+    <li>回到此頁，點下方 <b>「🖨️ 列印 / 另存 PDF」</b></li>
+    <li>點右上角 <b>分享 ↑</b> → 選「<b>列印</b>」</li>
+    <li>在預覽縮圖上用<b>兩指撐開</b>放大，即可另存 PDF</li>
+  </ol>
+  <div class="ios-guide-note">⚠️ 若 PDF 仍出現黑色區塊，請確認已關閉暗色模式後重新操作</div>
+</div>
+
+<div class="ctrl-bar">
+  <div style="flex:1">
+    <div class="ctrl-title">🖨️ 寶可夢卡牌列印</div>
+    <div class="ctrl-sub">共 ${totalCards} 張 · ${totalPages} 頁 A4（每頁 9 張）</div>
+  </div>
+  <button class="btn-close-print" onclick="window.close()">✕ 關閉</button>
+  <button class="btn-do-print" onclick="window.print()">🖨️ 列印 / 另存 PDF</button>
+</div>
+
+${pagesHTML}
+
+</body>
+</html>`;
+
+  const win = window.open('','_blank');
+  win.document.write(printHTML);
+  win.document.close();
 }
 
 function loadScript(src){
-  return new Promise((resolve, reject)=>{
-    const s = document.createElement('script');
-    s.src = src; s.onload = resolve; s.onerror = reject;
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src;s.onload=resolve;s.onerror=reject;
     document.head.appendChild(s);
-  });
-}
-
-function loadImageAsDataURL(url){
-  return new Promise((resolve, reject)=>{
-    // 先嘗試直接載入，失敗再走 proxy
-    function tryLoad(src, fallback){
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = ()=>{
-        try{
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || 480;
-          canvas.height = img.naturalHeight || 670;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const data = canvas.toDataURL('image/jpeg', 0.9);
-          // 確認不是空白 canvas（純灰）
-          if(data.length < 1000) throw new Error('empty');
-          resolve(data);
-        } catch(e){
-          if(fallback) fallback();
-          else reject(new Error('Canvas CORS blocked'));
-        }
-      };
-      img.onerror = ()=>{
-        if(fallback) fallback();
-        else reject(new Error('Image load failed: ' + src));
-      };
-      img.src = src;
-    }
-
-    // 先直接載入，失敗改走 corsproxy
-    tryLoad(url, ()=>{
-      const proxied = 'https://corsproxy.io/?' + encodeURIComponent(url);
-      tryLoad(proxied, null);
-    });
   });
 }
 
