@@ -2458,9 +2458,15 @@ function generatePrintPage(){
 <title>寶可夢卡牌列印 — ${totalCards} 張</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html{
+  color-scheme: light only; /* 強制亮色，避免手機暗色模式變黑 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 body{
   font-family:'Noto Sans TC',sans-serif;
   background:#f0f0f0;
+  color:#222;
   display:flex;flex-direction:column;align-items:center;
   padding:20px 0 40px;
   gap:20px;
@@ -2550,15 +2556,25 @@ body{
 
 /* 列印模式 */
 @media print{
-  body{background:white;padding:0;gap:0}
-  .ctrl-bar{display:none}
-  .pc-page{
-    box-shadow:none;
-    margin:0;
-    page-break-after:always;
-    width:210mm;height:297mm;
+  html,body{
+    background:#fff !important;
+    color:#000 !important;
+    padding:0 !important;gap:0 !important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
   }
-  .pc-page:last-child{page-break-after:avoid}
+  .ctrl-bar{display:none !important}
+  .pc-page{
+    background:#fff !important;
+    box-shadow:none !important;
+    margin:0 !important;
+    page-break-after:always;
+    break-after:page;
+    width:210mm !important;height:297mm !important;
+  }
+  .pc-page:last-child{page-break-after:avoid;break-after:avoid}
+  .pc-slot{background:#fff !important}
+  .pc-slot img{background:#fff !important}
 }
 </style>
 </head>
