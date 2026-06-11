@@ -2094,6 +2094,14 @@ function parseJPDeck(html){
 
   let curSection = '';  // ★ 逐 table 追蹤目前分類
 
+  // 模糊比對分類關鍵字（標題可能是「グッズ（13）」這種帶數字的）
+  function detectSection(text){
+    for(const key in JP_SEC){
+      if(text.startsWith(key)) return JP_SEC[key];
+    }
+    return null;
+  }
+
   doc.querySelectorAll('table').forEach(table=>{
     table.querySelectorAll('tr').forEach(row=>{
       const cells = row.querySelectorAll('td,th');
@@ -2102,16 +2110,16 @@ function parseJPDeck(html){
       const firstText = cells[0].textContent.trim();
 
       // 分類標題列：更新目前分類
-      if(JP_SEC[firstText]){
-        curSection = JP_SEC[firstText];
-        // 分類列若只有標題就跳過；有些版本標題跟第一張卡同列，繼續往下檢查
+      const detected = detectSection(firstText);
+      if(detected){
+        curSection = detected;
         if(cells.length < 3) return;
       }
 
       if(cells.length < 2) return;
 
       // 找出名稱/張數/系列/編號的欄位（標題列可能佔走 cells[0]）
-      const offset = JP_SEC[firstText] ? 1 : 0;
+      const offset = detected ? 1 : 0;
       const name = cells[offset]?.textContent.trim() || '';
       const qty  = parseInt(cells[offset+1]?.textContent.trim()) || 0;
       const set  = cells[offset+2]?.textContent.trim() || '';
@@ -2119,12 +2127,13 @@ function parseJPDeck(html){
 
       if(!name || !qty || SKIP.has(name)) return;
 
-      // ★ 比對 CSV：編號必須非空，且分類要相符
+      // ★ 比對 CSV：編號非空才比對；優先分類相符，否則退回第一個候選
       let matched = null;
       if(num){
         const candidates = ALL.filter(c=> c.card_number === num);
-        // 先找分類相符的；找不到就不採用（避免錯配）
-        matched = candidates.find(c=> !curSection || csvSection(c) === curSection) || null;
+        matched = candidates.find(c=> curSection && csvSection(c) === curSection)
+               || candidates[0]
+               || null;
       }
       // 基本能量通常沒編號 → 用名稱對照表
       if(!matched && !num){
