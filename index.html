@@ -2714,7 +2714,7 @@ function drawCutLines(pdf,startX,startY,cardW,cardH){
   }
 }
 
-// 預載圖片：先試官方網址，CORS 失敗自動改走 images.weserv.nl 代理
+// 預載圖片：weserv 代理（限流佇列 + 重試），最後退回官方直連
 function preloadAllImages(cards, onProgress){
   return new Promise(resolve=>{
     const urls=[...new Set(cards.map(c=>c.image_url).filter(Boolean))];
@@ -2722,8 +2722,8 @@ function preloadAllImages(cards, onProgress){
 
     const result={};
     let done=0;
-
-    function finish(){ done++; onProgress(done,urls.length); if(done===urls.length) resolve(result); }
+    const CONCURRENCY = 3;     // 一次最多 3 張，避免 weserv 限流
+    let idx = 0;
 
     function toCanvas(img){
       const c=document.createElement('canvas');
@@ -2736,30 +2736,51 @@ function preloadAllImages(cards, onProgress){
       return c.toDataURL('image/jpeg',0.92);
     }
 
-    urls.forEach(url=>{
-      // 第一關：weserv 代理（自帶 CORS header，不帶 Referer 抓圖）
-      const proxied='https://images.weserv.nl/?url='+encodeURIComponent(url.replace(/^https?:\/\//,''));
-      const img=new Image();
-      img.crossOrigin='anonymous';
-      img.onload=()=>{
-        try{ result[url]=toCanvas(img); }
-        catch(e){ result[url]=null; }
-        finish();
-      };
-      img.onerror=()=>{
-        // 第二關：直接抓官方（極少數情況有效）
-        const img2=new Image();
-        img2.crossOrigin='anonymous';
-        img2.onload=()=>{
-          try{ result[url]=toCanvas(img2); }
-          catch(e){ result[url]=null; }
-          finish();
+    function loadOne(src){
+      return new Promise(res=>{
+        const img=new Image();
+        img.crossOrigin='anonymous';
+        img.onload=()=>{
+          try{ res(toCanvas(img)); }
+          catch(e){ res(null); }
         };
-        img2.onerror=()=>{ result[url]=null; finish(); };
-        img2.src=url;
-      };
-      img.src=proxied;
-    });
+        img.onerror=()=> res(null);
+        img.src=src;
+      });
+    }
+
+    const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+
+    async function worker(){
+      while(idx < urls.length){
+        const url = urls[idx++];
+        const stripped = url.replace(/^https?:\/\//,'');
+
+        // 第1次：weserv
+        let data = await loadOne('https://images.weserv.nl/?url='+encodeURIComponent(stripped));
+        // 第2次：稍等後重試 weserv（限流恢復）
+        if(!data){
+          await sleep(800);
+          data = await loadOne('https://images.weserv.nl/?url='+encodeURIComponent(stripped));
+        }
+        // 第3次：wsrv.nl 別名
+        if(!data){
+          data = await loadOne('https://wsrv.nl/?url='+encodeURIComponent(stripped));
+        }
+        // 第4次：官方直連（極少數有效）
+        if(!data){
+          data = await loadOne(url);
+        }
+
+        result[url]=data;
+        done++;
+        onProgress(done,urls.length);
+      }
+    }
+
+    // 啟動固定數量的 worker
+    Promise.all(Array.from({length:Math.min(CONCURRENCY,urls.length)},()=>worker()))
+      .then(()=>resolve(result));
   });
 }
 
