@@ -2130,8 +2130,13 @@ function parseJPDeck(html){
 
 // ── 渲染牌組列表 ─────────────────────────────────────────
 const SECTION_LABEL = {
-  '寶可夢卡':'寶可夢','寶可夢道具':'寶可夢',
-  '物品卡':'訓練家','支援者卡':'訓練家','競技場卡':'訓練家','訓練家卡':'訓練家',
+  // 寶可夢（CSV 實際值：基礎 / 1階進化 / 2階進化）
+  '基礎':'寶可夢','1階進化':'寶可夢','2階進化':'寶可夢',
+  '寶可夢卡':'寶可夢','V進化':'寶可夢','VMAX':'寶可夢','VSTAR':'寶可夢',
+  // 訓練家
+  '物品卡':'訓練家','支援者卡':'訓練家','競技場卡':'訓練家',
+  '訓練家卡':'訓練家','寶可夢道具':'訓練家',
+  // 能量
   '能量卡':'能量','特殊能量卡':'能量','基本能量卡':'能量',
 };
 
@@ -2195,7 +2200,29 @@ function renderDeckList(cards){
     });
   });
 
+  // 牌組 PDF 輸出按鈕（有可列印的卡才顯示）
+  const printable = enriched.filter(c=>c._csv);
+  if(printable.length){
+    const totalQty = enriched.reduce((s,c)=>s+c.qty,0);
+    html = `<button class="btn-print-pdf" style="margin:4px 0 12px" id="deckPdfBtn">
+      📄 將整副牌組輸出 A4 PDF（${totalQty} 張）
+    </button>` + html;
+  }
+
   el.innerHTML = html;
+
+  // 牌組 PDF 按鈕事件
+  const pdfBtn = document.getElementById('deckPdfBtn');
+  if(pdfBtn){
+    window._deckCards = enriched;
+    pdfBtn.addEventListener('click', ()=>{
+      const items = window._deckCards
+        .filter(c=>c._csv)
+        .map(c=>({ card:c._csv, qty:c.qty }));
+      if(!items.length){ alert('牌組中沒有可輸出的卡牌'); return; }
+      exportPDF(items, pdfBtn);
+    });
+  }
 
   // 點擊行 → 在抽屜內顯示卡牌詳情
   el.querySelectorAll('.deck-card-row').forEach(row=>{
@@ -2526,17 +2553,19 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
 });
 
 // ── jsPDF 產生 PDF ──────────────────────────────────────
-document.getElementById('doPrintBtn').addEventListener('click', generatePDF);
-
-async function generatePDF(){
+document.getElementById('doPrintBtn').addEventListener('click', ()=>{
   if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
+  exportPDF(PRINT_LIST, document.getElementById('doPrintBtn'));
+});
 
-  const btn = document.getElementById('doPrintBtn');
+// 共用 PDF 輸出：items = [{card, qty}]，btn = 顯示進度的按鈕
+async function exportPDF(items, btn){
+  const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '⏳ 預載圖片中...';
 
   const expanded = [];
-  PRINT_LIST.forEach(item=>{
+  items.forEach(item=>{
     for(let i=0;i<item.qty;i++) expanded.push(item.card);
   });
 
@@ -2551,7 +2580,6 @@ async function generatePDF(){
     }
     const { jsPDF } = window.jspdf;
 
-    // 預載所有圖片（不設 crossOrigin，讓瀏覽器快取）
     const imgMap = await preloadAllImages(expanded, (n,t)=>{
       btn.textContent=`⏳ 預載 ${n}/${t}...`;
     });
@@ -2559,7 +2587,6 @@ async function generatePDF(){
     btn.textContent = '⏳ 排版中...';
 
     const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
-    // ★ 無間距緊密排版（少刀數）
     const cardW=63, cardH=88;
     const startX=(210-cardW*3)/2;
     const startY=(297-cardH*3)/2;
@@ -2578,16 +2605,15 @@ async function generatePDF(){
       pdf.addImage(base64,'JPEG',x,y,cardW,cardH,undefined,'FAST');
       cardOnPage++;
     }
-    // 最後一頁的裁切線
     drawCutLines(pdf,startX,startY,cardW,cardH);
 
     pdf.save(`pokemon_${expanded.length}張.pdf`);
     btn.textContent='✅ 下載完成！';
-    setTimeout(()=>{ btn.textContent='📄 產生 A4 PDF'; btn.disabled=false; },2000);
+    setTimeout(()=>{ btn.textContent=originalText; btn.disabled=false; },2000);
 
   } catch(err){
     alert('PDF 產生失敗：'+err.message);
-    btn.textContent='📄 產生 A4 PDF';
+    btn.textContent=originalText;
     btn.disabled=false;
   }
 }
