@@ -1110,7 +1110,7 @@ body.mobile .scroll-btns{display:flex}
         <span>已選 <b id="printKindCnt">0</b> 種</span>
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
-      <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 列印頁面</button>
+      <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
       <button class="btn-print-clear" id="printClearBtn">✕ 清空清單</button>
     </div>
   </div>
@@ -2525,63 +2525,122 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
   if(confirm('確定清空列印清單？')) { PRINT_LIST=[]; updatePrintBadge(); renderPrintList(); }
 });
 
-// ── 列印：同頁面內覆蓋（解決 iOS 跨網域圖片黑色問題）──
-document.getElementById('doPrintBtn').addEventListener('click', generatePrintPage);
+// ── jsPDF 產生 PDF（canvas 白底，解決黑色問題）──────────
+document.getElementById('doPrintBtn').addEventListener('click', generatePDF);
 
-function generatePrintPage(){
+async function generatePDF(){
   if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
 
+  const btn = document.getElementById('doPrintBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 載入中...';
+
+  // 展開卡片
   const expanded = [];
   PRINT_LIST.forEach(item=>{
     for(let i=0;i<item.qty;i++) expanded.push(item.card);
   });
 
-  const PER_PAGE = 9;
-  const pages = [];
-  for(let i=0;i<expanded.length;i+=PER_PAGE){
-    pages.push(expanded.slice(i,i+PER_PAGE));
-  }
-  const totalCards = expanded.length;
-  const totalPages = pages.length;
+  try {
+    // 動態載入 jsPDF
+    if(!window.jspdf){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
 
-  const pagesHTML = pages.map((pg, pi)=>{
-    const cells = Array.from({length:PER_PAGE},(_,ci)=>{
-      const card = pg[ci];
-      if(!card) return `<div class="po-slot po-empty"></div>`;
-      return `<div class="po-slot">${card.image_url
-        ? `<img src="${card.image_url}" alt="${esc(card.name||'')}">`
-        : `<div class="po-noimg">${esc(card.name||'—')}</div>`
-      }</div>`;
-    }).join('');
-    return `<div class="po-page">
-      <div class="po-grid">${cells}</div>
-      ${totalPages>1?`<div class="po-pagenum">${pi+1} / ${totalPages}</div>`:''}
-    </div>`;
-  }).join('');
+    const cardW=63, cardH=88, gapX=3, gapY=3;
+    const startX=(210-(cardW*3+gapX*2))/2;
+    const startY=(297-(cardH*3+gapY*2))/2;
+    const PER_PAGE=9;
+    let cardOnPage=0;
 
-  // 注入列印覆蓋層
-  let overlay = document.getElementById('printOverlay');
-  if(!overlay){
-    overlay = document.createElement('div');
-    overlay.id = 'printOverlay';
-    document.body.appendChild(overlay);
+    for(let i=0;i<expanded.length;i++){
+      if(cardOnPage===PER_PAGE){ pdf.addPage(); cardOnPage=0; }
+
+      btn.textContent=`⏳ 處理 ${i+1}/${expanded.length}...`;
+
+      const card = expanded[i];
+      const col = cardOnPage%3;
+      const row = Math.floor(cardOnPage/3);
+      const x = startX + col*(cardW+gapX);
+      const y = startY + row*(cardH+gapY);
+
+      // 裁切線（十字）
+      pdf.setDrawColor(180,180,180);
+      pdf.setLineWidth(0.15);
+      pdf.line(x-4,y, x,y);       pdf.line(x,y-4, x,y);
+      pdf.line(x+cardW,y, x+cardW+4,y); pdf.line(x+cardW,y-4, x+cardW,y);
+      pdf.line(x-4,y+cardH, x,y+cardH); pdf.line(x,y+cardH, x,y+cardH+4);
+      pdf.line(x+cardW,y+cardH, x+cardW+4,y+cardH); pdf.line(x+cardW,y+cardH, x+cardW,y+cardH+4);
+
+      // 圖片處理
+      const base64 = await getCardBase64(card);
+      pdf.addImage(base64,'JPEG',x,y,cardW,cardH,undefined,'FAST');
+      cardOnPage++;
+    }
+
+    pdf.save(`pokemon_${expanded.length}張.pdf`);
+    btn.textContent='✅ 下載完成！';
+    setTimeout(()=>{ btn.textContent='📄 產生 A4 PDF'; btn.disabled=false; },2000);
+
+  } catch(err){
+    alert('PDF 產生失敗：'+err.message);
+    btn.textContent='📄 產生 A4 PDF';
+    btn.disabled=false;
   }
-  overlay.innerHTML = `
-    <div class="po-ctrl" id="poCtrl">
-      <span>🖨️ 共 ${totalCards} 張 · ${totalPages} 頁 A4</span>
-      <button onclick="closePrintOverlay()">✕ 關閉</button>
-      <button class="po-btn-print" onclick="window.print()">🖨️ 列印 / 另存 PDF</button>
-    </div>
-    ${pagesHTML}
-  `;
-  overlay.classList.add('active');
-  document.body.style.overflow = 'hidden';
 }
 
-function closePrintOverlay(){
-  const o = document.getElementById('printOverlay');
-  if(o){ o.classList.remove('active'); o.innerHTML=''; }
-  document.body.style.overflow = '';
+// 圖片轉 base64（canvas 先鋪白底，解決透明/黑色問題）
+function getCardBase64(card){
+  return new Promise(resolve=>{
+    if(!card.image_url){ resolve(blankCard(card.name)); return; }
+
+    const img = new Image();
+    img.crossOrigin='anonymous';
+
+    img.onload=()=>{
+      try{
+        const canvas=document.createElement('canvas');
+        canvas.width=img.naturalWidth||630;
+        canvas.height=img.naturalHeight||880;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#ffffff';           // ★ 先鋪白底
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(img,0,0);            // 再畫圖片
+        resolve(canvas.toDataURL('image/jpeg',0.92));
+      }catch(e){
+        resolve(blankCard(card.name));
+      }
+    };
+    img.onerror=()=> resolve(blankCard(card.name));
+    img.src=card.image_url;
+  });
+}
+
+// CORS 失敗時的灰框替代圖
+function blankCard(name){
+  const canvas=document.createElement('canvas');
+  canvas.width=630; canvas.height=880;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#e8e8e8';
+  ctx.fillRect(0,0,630,880);
+  ctx.strokeStyle='#bbb';
+  ctx.lineWidth=4;
+  ctx.setLineDash([12,8]);
+  ctx.strokeRect(20,20,590,840);
+  ctx.fillStyle='#888';
+  ctx.font='bold 36px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(name||'—',315,440);
+  ctx.font='28px sans-serif';
+  ctx.fillText('圖片無法載入',315,490);
+  return canvas.toDataURL('image/jpeg',0.8);
 }
 
 // ─── 啟動 ───────────────────────────────────────────────
