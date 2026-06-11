@@ -2525,7 +2525,7 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
   if(confirm('確定清空列印清單？')) { PRINT_LIST=[]; updatePrintBadge(); renderPrintList(); }
 });
 
-// ── jsPDF 產生 PDF（canvas 白底，解決黑色問題）──────────
+// ── jsPDF 產生 PDF ──────────────────────────────────────
 document.getElementById('doPrintBtn').addEventListener('click', generatePDF);
 
 async function generatePDF(){
@@ -2533,16 +2533,14 @@ async function generatePDF(){
 
   const btn = document.getElementById('doPrintBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ 載入中...';
+  btn.textContent = '⏳ 預載圖片中...';
 
-  // 展開卡片
   const expanded = [];
   PRINT_LIST.forEach(item=>{
     for(let i=0;i<item.qty;i++) expanded.push(item.card);
   });
 
   try {
-    // 動態載入 jsPDF
     if(!window.jspdf){
       await new Promise((res,rej)=>{
         const s=document.createElement('script');
@@ -2552,35 +2550,39 @@ async function generatePDF(){
       });
     }
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
 
-    const cardW=63, cardH=88, gapX=3, gapY=3;
-    const startX=(210-(cardW*3+gapX*2))/2;
-    const startY=(297-(cardH*3+gapY*2))/2;
+    // 預載所有圖片（不設 crossOrigin，讓瀏覽器快取）
+    const imgMap = await preloadAllImages(expanded, (n,t)=>{
+      btn.textContent=`⏳ 預載 ${n}/${t}...`;
+    });
+
+    btn.textContent = '⏳ 排版中...';
+
+    const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
+    // ★ 無間距緊密排版
+    const cardW=63, cardH=88;
+    const startX=(210-cardW*3)/2;   // 10.5mm 左右留白
+    const startY=(297-cardH*3)/2;   // 13.5mm 上下留白
     const PER_PAGE=9;
     let cardOnPage=0;
 
     for(let i=0;i<expanded.length;i++){
       if(cardOnPage===PER_PAGE){ pdf.addPage(); cardOnPage=0; }
+      const card=expanded[i];
+      const col=cardOnPage%3;
+      const row=Math.floor(cardOnPage/3);
+      const x=startX+col*cardW;
+      const y=startY+row*cardH;
 
-      btn.textContent=`⏳ 處理 ${i+1}/${expanded.length}...`;
-
-      const card = expanded[i];
-      const col = cardOnPage%3;
-      const row = Math.floor(cardOnPage/3);
-      const x = startX + col*(cardW+gapX);
-      const y = startY + row*(cardH+gapY);
-
-      // 裁切線（十字）
+      // 裁切線十字
       pdf.setDrawColor(180,180,180);
       pdf.setLineWidth(0.15);
-      pdf.line(x-4,y, x,y);       pdf.line(x,y-4, x,y);
-      pdf.line(x+cardW,y, x+cardW+4,y); pdf.line(x+cardW,y-4, x+cardW,y);
-      pdf.line(x-4,y+cardH, x,y+cardH); pdf.line(x,y+cardH, x,y+cardH+4);
-      pdf.line(x+cardW,y+cardH, x+cardW+4,y+cardH); pdf.line(x+cardW,y+cardH, x+cardW,y+cardH+4);
+      pdf.line(x-4,y,x,y);             pdf.line(x,y-4,x,y);
+      pdf.line(x+cardW,y,x+cardW+4,y); pdf.line(x+cardW,y-4,x+cardW,y);
+      pdf.line(x-4,y+cardH,x,y+cardH); pdf.line(x,y+cardH,x,y+cardH+4);
+      pdf.line(x+cardW,y+cardH,x+cardW+4,y+cardH); pdf.line(x+cardW,y+cardH,x+cardW,y+cardH+4);
 
-      // 圖片處理
-      const base64 = await getCardBase64(card);
+      const base64 = imgMap[card.image_url] || blankCard(card.name);
       pdf.addImage(base64,'JPEG',x,y,cardW,cardH,undefined,'FAST');
       cardOnPage++;
     }
@@ -2596,51 +2598,71 @@ async function generatePDF(){
   }
 }
 
-// 圖片轉 base64（canvas 先鋪白底，解決透明/黑色問題）
-function getCardBase64(card){
+// 預載圖片：先用 <img> 在頁面上載入（無 crossOrigin），
+// 載完後再用 canvas 讀取，成功機率比直接 new Image() + crossOrigin 高
+function preloadAllImages(cards, onProgress){
   return new Promise(resolve=>{
-    if(!card.image_url){ resolve(blankCard(card.name)); return; }
+    const urls=[...new Set(cards.map(c=>c.image_url).filter(Boolean))];
+    if(!urls.length){ resolve({}); return; }
 
-    const img = new Image();
-    img.crossOrigin='anonymous';
+    // 建立隱藏容器
+    let box=document.getElementById('_imgPreload');
+    if(!box){
+      box=document.createElement('div');
+      box.id='_imgPreload';
+      box.style.cssText='position:fixed;top:-9999px;left:-9999px;width:63px;height:88px;overflow:hidden;opacity:0.001;pointer-events:none;';
+      document.body.appendChild(box);
+    }
+    box.innerHTML='';
 
-    img.onload=()=>{
-      try{
-        const canvas=document.createElement('canvas');
-        canvas.width=img.naturalWidth||630;
-        canvas.height=img.naturalHeight||880;
-        const ctx=canvas.getContext('2d');
-        ctx.fillStyle='#ffffff';           // ★ 先鋪白底
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0);            // 再畫圖片
-        resolve(canvas.toDataURL('image/jpeg',0.92));
-      }catch(e){
-        resolve(blankCard(card.name));
-      }
-    };
-    img.onerror=()=> resolve(blankCard(card.name));
-    img.src=card.image_url;
+    const result={};
+    let done=0;
+
+    urls.forEach(url=>{
+      const img=document.createElement('img');
+      // ★ 不設 crossOrigin — 讓瀏覽器用一般模式載入並快取
+      img.onload=()=>{
+        try{
+          const c=document.createElement('canvas');
+          c.width=img.naturalWidth||630;
+          c.height=img.naturalHeight||880;
+          const ctx=c.getContext('2d');
+          ctx.fillStyle='#fff';
+          ctx.fillRect(0,0,c.width,c.height);
+          ctx.drawImage(img,0,0);
+          result[url]=c.toDataURL('image/jpeg',0.92);
+        }catch(e){
+          // canvas 被 taint（CORS）→ 留 null，用灰框代替
+          result[url]=null;
+        }
+        done++;
+        onProgress(done,urls.length);
+        if(done===urls.length) resolve(result);
+      };
+      img.onerror=()=>{
+        result[url]=null;
+        done++;
+        onProgress(done,urls.length);
+        if(done===urls.length) resolve(result);
+      };
+      img.src=url;
+      box.appendChild(img);
+    });
   });
 }
 
-// CORS 失敗時的灰框替代圖
+// 灰框替代圖
 function blankCard(name){
-  const canvas=document.createElement('canvas');
-  canvas.width=630; canvas.height=880;
-  const ctx=canvas.getContext('2d');
-  ctx.fillStyle='#e8e8e8';
-  ctx.fillRect(0,0,630,880);
-  ctx.strokeStyle='#bbb';
-  ctx.lineWidth=4;
-  ctx.setLineDash([12,8]);
-  ctx.strokeRect(20,20,590,840);
-  ctx.fillStyle='#888';
-  ctx.font='bold 36px sans-serif';
-  ctx.textAlign='center';
+  const c=document.createElement('canvas');
+  c.width=630;c.height=880;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#e8e8e8';ctx.fillRect(0,0,630,880);
+  ctx.strokeStyle='#bbb';ctx.lineWidth=4;
+  ctx.setLineDash([12,8]);ctx.strokeRect(20,20,590,840);
+  ctx.fillStyle='#888';ctx.font='bold 36px sans-serif';ctx.textAlign='center';
   ctx.fillText(name||'—',315,440);
-  ctx.font='28px sans-serif';
-  ctx.fillText('圖片無法載入',315,490);
-  return canvas.toDataURL('image/jpeg',0.8);
+  ctx.font='28px sans-serif';ctx.fillText('圖片無法載入',315,490);
+  return c.toDataURL('image/jpeg',0.8);
 }
 
 // ─── 啟動 ───────────────────────────────────────────────
