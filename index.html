@@ -2077,8 +2077,9 @@ function parseJPDeck(html){
 
   // 日文分類 → 中文 section
   const JP_SEC = {
-    'ポケモン':'寶可夢', 'ポケモンのどうぐ':'寶可夢',
-    'グッズ':'訓練家',  'サポート':'訓練家', 'スタジアム':'訓練家',
+    'ポケモン':'寶可夢',
+    'グッズ':'訓練家', 'ポケモンのどうぐ':'訓練家',
+    'サポート':'訓練家', 'スタジアム':'訓練家',
     'エネルギー':'能量',
   };
   const SKIP = new Set(['ポケモン','ポケモンのどうぐ','グッズ','サポート',
@@ -2086,41 +2087,65 @@ function parseJPDeck(html){
     'プレイヤーID','ニックネーム','生年月日','大会名','開催地','出場リーグ',
     '氏名：カナ','氏名：漢字','']);
 
+  // CSV card_type → section 群組（比對時驗證用）
+  function csvSection(c){
+    return SECTION_LABEL[c.card_type] || null;
+  }
+
+  let curSection = '';  // ★ 逐 table 追蹤目前分類
+
   doc.querySelectorAll('table').forEach(table=>{
-    // 判斷這個 table 屬於哪個分類
-    // 找最近的前置元素裡有沒有分類關鍵字（有些版本用 th，有些用獨立 table）
-    let section = '';
-    const firstTd = table.querySelector('td');
-    if(!firstTd) return;
-    const firstText = firstTd.textContent.trim();
-    if(JP_SEC[firstText]) section = JP_SEC[firstText];
-
-    // 如果第一格就是分類名，那這是「標題表格」，不是資料列，跳過
-    if(SKIP.has(firstText) && !section) return;
-
     table.querySelectorAll('tr').forEach(row=>{
-      const cells = row.querySelectorAll('td');
+      const cells = row.querySelectorAll('td,th');
+      if(!cells.length) return;
+
+      const firstText = cells[0].textContent.trim();
+
+      // 分類標題列：更新目前分類
+      if(JP_SEC[firstText]){
+        curSection = JP_SEC[firstText];
+        // 分類列若只有標題就跳過；有些版本標題跟第一張卡同列，繼續往下檢查
+        if(cells.length < 3) return;
+      }
+
       if(cells.length < 2) return;
 
-      const name = cells[0].textContent.trim();
-      const qty  = parseInt(cells[1].textContent.trim())||0;
-      const set  = cells[2]?.textContent.trim()||'';
-      const num  = cells[3]?.textContent.trim()||'';
+      // 找出名稱/張數/系列/編號的欄位（標題列可能佔走 cells[0]）
+      const offset = JP_SEC[firstText] ? 1 : 0;
+      const name = cells[offset]?.textContent.trim() || '';
+      const qty  = parseInt(cells[offset+1]?.textContent.trim()) || 0;
+      const set  = cells[offset+2]?.textContent.trim() || '';
+      const num  = cells[offset+3]?.textContent.trim() || '';
 
       if(!name || !qty || SKIP.has(name)) return;
 
-      // 用 card_number 在 CSV 比對
-      const matched = ALL.find(c=> c.card_number === num);
+      // ★ 比對 CSV：編號必須非空，且分類要相符
+      let matched = null;
+      if(num){
+        const candidates = ALL.filter(c=> c.card_number === num);
+        // 先找分類相符的；找不到就不採用（避免錯配）
+        matched = candidates.find(c=> !curSection || csvSection(c) === curSection) || null;
+      }
+      // 基本能量通常沒編號 → 用名稱對照表
+      if(!matched && !num){
+        const JP_ENERGY = {
+          '基本草エネルギー':'基本草能量','基本炎エネルギー':'基本火能量',
+          '基本水エネルギー':'基本水能量','基本雷エネルギー':'基本雷能量',
+          '基本超エネルギー':'基本超能量','基本闘エネルギー':'基本鬥能量',
+          '基本悪エネルギー':'基本惡能量','基本鋼エネルギー':'基本鋼能量',
+        };
+        const twName = JP_ENERGY[name];
+        if(twName) matched = ALL.find(c=> c.name === twName) || null;
+      }
 
-      // 若有比對到 → 用中文資料；沒有 → 保留日文名稱和原始資訊
       cards.push({
         card_id: matched?.card_id || '',
-        name:    matched?.name || name,   // 有中文用中文，沒有保留日文
+        name:    matched?.name || name,
         qty,
         sub:     matched
           ? (matched.set_name||'') + (matched.card_number ? ' #'+matched.card_number : '')
-          : set + (num ? ' '+num : ''),   // 沒比對到就顯示日文擴充包+編號
-        section: section || (matched ? SECTION_LABEL[matched.card_type]||'訓練家' : '訓練家'),
+          : set + (num ? ' '+num : ''),
+        section: curSection || (matched ? csvSection(matched)||'訓練家' : '訓練家'),
       });
     });
   });
