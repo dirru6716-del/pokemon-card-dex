@@ -2696,22 +2696,38 @@ async function exportPDF(items, btn){
   }
 }
 
-// 整條貫穿裁切線：只要切 4 刀（2橫2直）+ 外框 4 刀
+// 裁切輔助線：邊緣實線對刀 + 卡片之間虛線分隔
 function drawCutLines(pdf,startX,startY,cardW,cardH){
+  // 1) 紙張邊緣的實線對刀記號
   pdf.setDrawColor(170,170,170);
   pdf.setLineWidth(0.12);
-  // 垂直線 ×4（含外框）：延伸到紙張邊緣方便對刀
+  pdf.setLineDash([]);   // 實線
   for(let c=0;c<=3;c++){
     const x=startX+c*cardW;
     pdf.line(x,0, x,startY);                       // 上延伸
     pdf.line(x,startY+3*cardH, x,297);             // 下延伸
   }
-  // 水平線 ×4（含外框）
   for(let r=0;r<=3;r++){
     const y=startY+r*cardH;
     pdf.line(0,y, startX,y);                       // 左延伸
     pdf.line(startX+3*cardW,y, 210,y);             // 右延伸
   }
+
+  // 2) 卡片之間的虛線分隔（貫穿排版區，方便對齊裁切）
+  pdf.setDrawColor(150,150,150);
+  pdf.setLineWidth(0.1);
+  pdf.setLineDash([1.5,1.5]);  // 虛線：1.5mm 線段 + 1.5mm 間隔
+  // 垂直虛線（含外框共 4 條）
+  for(let c=0;c<=3;c++){
+    const x=startX+c*cardW;
+    pdf.line(x,startY, x,startY+3*cardH);
+  }
+  // 水平虛線（含外框共 4 條）
+  for(let r=0;r<=3;r++){
+    const y=startY+r*cardH;
+    pdf.line(startX,y, startX+3*cardW,y);
+  }
+  pdf.setLineDash([]);  // 還原實線，避免影響後續繪圖
 }
 
 // 預載圖片：weserv 代理（限流佇列 + 重試），最後退回官方直連
