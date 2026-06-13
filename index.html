@@ -1286,6 +1286,23 @@ function loadCards(cards){
   }
   buildOpts();
   document.getElementById('totalCnt').textContent=cards.length;
+
+  // 臨時診斷：把第一張卡所有欄位顯示在搜尋結果上方
+  try{
+    const s = cards[0] || {};
+    const dbg = '【診斷】欄位：' + Object.keys(s).join(' / ')
+      + '\n\n第一張卡內容：\n'
+      + Object.entries(s).map(([k,v])=>`${k} = ${v}`).join('\n');
+    const box = document.getElementById('resultCnt');
+    if(box){
+      const pre = document.createElement('pre');
+      pre.id='_debugDump';
+      pre.style.cssText='white-space:pre-wrap;font-size:11px;color:#8fd;background:#0a1424;padding:10px;border:1px solid #2a4060;border-radius:8px;margin:8px;max-height:300px;overflow:auto;';
+      pre.textContent = dbg;
+      box.closest('div')?.parentNode?.insertBefore(pre, box.closest('div').nextSibling);
+    }
+  }catch(e){}
+
   doSearch();
 }
 // 從 card_number 尾碼抽取稀有度（如「057/080 R」→ R，「095/106 ACE」→ ACE）
