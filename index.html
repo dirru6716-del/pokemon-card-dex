@@ -887,7 +887,6 @@ body.mobile .scroll-btns{display:flex}
       <div class="fg"><label>卡片類型</label><select id="fType"><option value="">全部</option></select></div>
       <div class="fg"><label>擴充包</label><select id="fSet"><option value="">全部</option></select></div>
       <div class="fg"><label>規範標記</label><select id="fReg"><option value="">全部</option></select></div>
-      <div class="fg"><label>稀有度</label><select id="fRarity"><option value="">全部</option></select></div>
       <div class="fg">
         <label>屬性
           <span style="float:right;display:flex;gap:4px">
@@ -1286,31 +1285,7 @@ function loadCards(cards){
   }
   buildOpts();
   document.getElementById('totalCnt').textContent=cards.length;
-
-  // 臨時診斷：把第一張卡所有欄位顯示在搜尋結果上方
-  try{
-    const s = cards[0] || {};
-    const dbg = '【診斷】欄位：' + Object.keys(s).join(' / ')
-      + '\n\n第一張卡內容：\n'
-      + Object.entries(s).map(([k,v])=>`${k} = ${v}`).join('\n');
-    const box = document.getElementById('resultCnt');
-    if(box){
-      const pre = document.createElement('pre');
-      pre.id='_debugDump';
-      pre.style.cssText='white-space:pre-wrap;font-size:11px;color:#8fd;background:#0a1424;padding:10px;border:1px solid #2a4060;border-radius:8px;margin:8px;max-height:300px;overflow:auto;';
-      pre.textContent = dbg;
-      box.closest('div')?.parentNode?.insertBefore(pre, box.closest('div').nextSibling);
-    }
-  }catch(e){}
-
   doSearch();
-}
-// 從 card_number 尾碼抽取稀有度（如「057/080 R」→ R，「095/106 ACE」→ ACE）
-function getRarity(c){
-  const n = (c.card_number||'').trim();
-  // 取最後一段非數字/斜線的字母標記
-  const m = n.match(/([A-Za-z]{1,4})\s*$/);
-  return m ? m[1].toUpperCase() : '';
 }
 
 function buildOpts(){
@@ -1434,15 +1409,7 @@ function buildOpts(){
     ...allSets.filter(s=> !SET_ORDER.includes(s)).sort((a,b)=> setMaxId[b]-setMaxId[a]),
   ];
 
-  // 稀有度：依常見順序排列，CSV 內有的才列出
-  const RARITY_ORDER = ['C','U','R','RR','RRR','AR','SR','SAR','UR','HR','ACE','PROMO','K'];
-  const foundRarities = [...new Set(ALL.map(getRarity).filter(Boolean))];
-  const rarities = [
-    ...RARITY_ORDER.filter(r=> foundRarities.includes(r)),
-    ...foundRarities.filter(r=> !RARITY_ORDER.includes(r)).sort(),
-  ];
-
-  fillSel('fType',types);fillSel('fSet',ordered);fillSel('fReg',regs);fillSel('fRarity',rarities);
+  fillSel('fType',types);fillSel('fSet',ordered);fillSel('fReg',regs);
 }
 function fillSel(id,opts){
   const el=document.getElementById(id);
@@ -1457,7 +1424,6 @@ function doSearch(){
   const type =document.getElementById('fType').value;
   const set  =document.getElementById('fSet').value;
   const reg  =document.getElementById('fReg').value;
-  const rarity=document.getElementById('fRarity').value;
   const hpMin=parseInt(document.getElementById('fHpMin').value)||0;
   const hpMax=parseInt(document.getElementById('fHpMax').value)||Infinity;
   const dmgMinRaw = document.getElementById('fDmgMin').value.trim();
@@ -1479,7 +1445,6 @@ function doSearch(){
     if(illus&&!(c.illustrator||'').toLowerCase().includes(illus))return false;
     if(set&&c.set_name!==set)return false;
     if(reg&&c.regulation!==reg)return false;
-    if(rarity&&getRarity(c)!==rarity)return false;
     const hp=parseInt(c.hp)||0;
     if(hp<hpMin||hp>hpMax)return false;
     // 撤退費用篩選：從 retreat_cost 欄位取數字
@@ -1720,7 +1685,6 @@ function renderDetail(c){
       ${c.card_type?`<span class="tag">${esc(c.card_type)}</span>`:''}
       ${c.card_number?`<span class="tag">#${esc(c.card_number)}</span>`:''}
       ${c.regulation?`<span class="tag">規範 ${esc(c.regulation)}</span>`:''}
-      <span class="tag">稀有度 ${getRarity(c)||'無'}</span>
       ${c.types?`<span class="tag" style="color:${tc};border-color:${tc}33">${esc(c.types)}</span>`:''}
     </div>`;
   const isPoke=POKE_T.has(c.card_type);
@@ -1942,7 +1906,6 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 
 // ─── EVENTS ──────────────────────────────────────────────
 document.getElementById('searchBtn').addEventListener('click',doSearch);
-document.getElementById('fRarity').addEventListener('change',()=>{curPage=1;doSearch();});
 document.getElementById('fReg').addEventListener('change',()=>{curPage=1;doSearch();});
 document.getElementById('fType').addEventListener('change',()=>{curPage=1;doSearch();});
 document.getElementById('fSet').addEventListener('change',()=>{curPage=1;doSearch();});
@@ -1966,7 +1929,7 @@ document.querySelectorAll('.chip').forEach(chip=>{
   });
 });
 document.getElementById('resetBtn').addEventListener('click',()=>{
-  ['fName','fIllustrator','fType','fSet','fReg','fRarity','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fIllustrator','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
@@ -2530,7 +2493,7 @@ document.getElementById('scrollBotBtn').addEventListener('click', ()=>{
   window.scrollTo({top:h, behavior:'smooth'});
 });
 document.getElementById('floatResetBtn').addEventListener('click', ()=>{
-  ['fName','fIllustrator','fType','fSet','fReg','fRarity','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
+  ['fName','fIllustrator','fType','fSet','fReg','fHpMin','fHpMax','fDmgMin','fDmgMax','fRetreatMax','fEff'].forEach(id=>document.getElementById(id).value='');
   ACTIVE_TYPES.clear();
   ACTIVE_ATK_ENERGY.clear();
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
