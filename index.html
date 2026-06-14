@@ -346,6 +346,16 @@ body.mobile .scroll-btns{display:flex}
 .scroll-btn:hover{background:#2050c0;transform:scale(1.08)}
 .scroll-btn:active{transform:scale(.95)}
 .scroll-btn-clear{background:#e03040}
+.scroll-btn-search{background:#3060e0;font-size:1.1rem}
+.scroll-btn-printlist{background:#1a8050;font-size:1.1rem;position:relative}
+.scroll-btn-printlist .fab-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:#e03040;color:#fff;font-size:.6rem;font-weight:700;
+  min-width:16px;height:16px;border-radius:8px;
+  display:none;align-items:center;justify-content:center;padding:0 3px;
+  font-family:'Orbitron',sans-serif;
+}
+.scroll-btn-printlist .fab-badge.show{display:flex}
 .scroll-btn-clear:hover{background:#b02020}
 
 /* ── 牌組抽屜 ── */
@@ -1050,6 +1060,8 @@ body.mobile .scroll-btns{display:flex}
 
 <!-- 浮動上下捲動按鈕（手機模式才顯示）-->
 <div class="scroll-btns" id="scrollBtns">
+  <button class="scroll-btn scroll-btn-search" id="floatSearchBtn" title="搜尋">🔍</button>
+  <button class="scroll-btn scroll-btn-printlist" id="floatPrintListBtn" title="列印清單">🖨️<span class="fab-badge" id="fabPrintBadge">0</span></button>
   <button class="scroll-btn" id="scrollTopBtn" title="回到最上方">↑</button>
   <button class="scroll-btn" id="scrollBotBtn" title="移到最下方">↓</button>
   <button class="scroll-btn scroll-btn-clear" id="floatResetBtn" title="清除搜尋條件">✕</button>
@@ -2502,6 +2514,18 @@ window.addEventListener('resize', ()=>{
 });
 
 // ★ 浮動捲動按鈕
+document.getElementById('floatSearchBtn').addEventListener('click', ()=>{
+  curPage=1;
+  doSearch();
+  // 捲到搜尋結果區
+  const res = document.getElementById('grid') || document.getElementById('resultCnt');
+  if(res) res.scrollIntoView({behavior:'smooth', block:'start'});
+  else { document.body.scrollTo({top:0,behavior:'smooth'}); window.scrollTo({top:0,behavior:'smooth'}); }
+});
+document.getElementById('floatPrintListBtn').addEventListener('click', ()=>{
+  document.getElementById('printDrawer').classList.add('open');
+  renderPrintList();
+});
 document.getElementById('scrollTopBtn').addEventListener('click', ()=>{
   document.body.scrollTo({top:0, behavior:'smooth'});
   window.scrollTo({top:0, behavior:'smooth'});
@@ -2550,6 +2574,13 @@ function updatePrintBadge(){
   if(bar && cnt){
     cnt.innerHTML = `${total} <span>張 / ${PRINT_LIST.length} 種</span>`;
     bar.classList.toggle('visible', total > 0);
+  }
+
+  // 浮動按鈕徽章
+  const fab = document.getElementById('fabPrintBadge');
+  if(fab){
+    fab.textContent = total;
+    fab.classList.toggle('show', total > 0);
   }
 }
 
