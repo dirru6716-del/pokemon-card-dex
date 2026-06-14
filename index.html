@@ -695,6 +695,12 @@ body.mobile .scroll-btns{display:flex}
   transition:all .15s;
 }
 .btn-print-clear:hover{border-color:var(--red);color:var(--red)}
+.btn-deck-save,.btn-deck-import{
+  flex:1;padding:9px;border-radius:8px;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:.85rem;font-weight:700;
+  border:1px solid #2a5a8a;background:#13243c;color:#7ab8ff;transition:all .15s;
+}
+.btn-deck-save:hover,.btn-deck-import:hover{background:#1a3050;border-color:#4a8ad0}
 
 /* ── 列印覆蓋層 ── */
 #printOverlay{
@@ -1096,7 +1102,7 @@ body.mobile .scroll-btns{display:flex}
   <div class="print-backdrop" id="printBackdrop"></div>
   <div class="print-panel">
     <div class="print-panel-hdr">
-      🖨️ PRINT LIST
+      🖨️ 列印清單 / 牌庫
       <button class="print-close" id="printClose">✕</button>
     </div>
     <div class="print-list" id="printList">
@@ -1111,6 +1117,11 @@ body.mobile .scroll-btns{display:flex}
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
       <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-deck-save" id="deckSaveBtn">💾 儲存牌庫</button>
+        <button class="btn-deck-import" id="deckImportBtn">📂 匯入牌庫</button>
+      </div>
+      <input type="file" id="deckFileInput" accept=".json,application/json" style="display:none">
       <button class="btn-print-clear" id="printClearBtn">✕ 清空清單</button>
     </div>
   </div>
@@ -2632,6 +2643,110 @@ document.getElementById('printBackdrop').addEventListener('click',()=>{
 document.getElementById('printClearBtn').addEventListener('click',()=>{
   if(!PRINT_LIST.length) return;
   if(confirm('確定清空列印清單？')) { PRINT_LIST=[]; updatePrintBadge(); renderPrintList(); }
+});
+
+// ── 儲存牌庫（下載 JSON）──────────────────────────────────
+document.getElementById('deckSaveBtn').addEventListener('click',()=>{
+  if(!PRINT_LIST.length){ alert('清單是空的，請先加入卡片。'); return; }
+
+  const name = prompt('幫這個牌庫取個名字：', '我的牌庫_' + new Date().toLocaleDateString('zh-TW').replace(/\//g,''));
+  if(name===null) return; // 取消
+
+  const deck = {
+    type: 'pokemon-deck',
+    version: 1,
+    name: name || '未命名牌庫',
+    savedAt: new Date().toISOString(),
+    total: printListTotal(),
+    cards: PRINT_LIST.map(i=>({
+      card_id: i.card.card_id,
+      name: i.card.name,
+      card_number: i.card.card_number || '',
+      set_name: i.card.set_name || '',
+      qty: i.qty,
+    })),
+  };
+
+  const blob = new Blob([JSON.stringify(deck,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (name||'deck').replace(/[\/\\:*?"<>|]/g,'_');
+  a.download = `${safeName}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+
+  alert('牌庫已下載！\n你可以把這個 .json 檔案上傳到 Google 雲端硬碟保存。\n之後用「📂 匯入牌庫」就能還原。');
+});
+
+// ── 匯入牌庫（讀 JSON）────────────────────────────────────
+document.getElementById('deckImportBtn').addEventListener('click',()=>{
+  document.getElementById('deckFileInput').click();
+});
+
+document.getElementById('deckFileInput').addEventListener('change',(e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const deck = JSON.parse(ev.target.result);
+      if(deck.type !== 'pokemon-deck' || !Array.isArray(deck.cards)){
+        alert('檔案格式不正確，這不是牌庫檔案。');
+        return;
+      }
+
+      // 用 card_id 對回完整卡片資料；對不到的用 card_number 再試
+      const restored = [];
+      const missing = [];
+      deck.cards.forEach(item=>{
+        let card = ALL.find(c=> c.card_id === item.card_id);
+        if(!card && item.card_number){
+          card = ALL.find(c=> c.card_number === item.card_number);
+        }
+        if(card){
+          restored.push({ card, qty: item.qty||1 });
+        }else{
+          missing.push(item.name || item.card_id);
+        }
+      });
+
+      if(!restored.length){
+        alert('匯入失敗：找不到任何對應的卡片（可能 CSV 資料不同步）。');
+        return;
+      }
+
+      // 詢問：取代還是合併
+      let mode = 'replace';
+      if(PRINT_LIST.length){
+        mode = confirm('目前清單已有卡片。\n\n按「確定」= 取代成匯入的牌庫\n按「取消」= 與現有清單合併')
+          ? 'replace' : 'merge';
+      }
+
+      if(mode==='replace') PRINT_LIST = [];
+      restored.forEach(r=>{
+        const idx = PRINT_LIST.findIndex(i=>i.card.card_id===r.card.card_id);
+        if(idx>=0) PRINT_LIST[idx].qty = Math.min(PRINT_LIST[idx].qty + r.qty, 99);
+        else PRINT_LIST.push({card:r.card, qty:r.qty});
+      });
+
+      updatePrintBadge();
+      renderPrintList();
+      document.getElementById('printDrawer').classList.add('open');
+
+      let msg = `✅ 已匯入「${deck.name||'牌庫'}」\n共 ${restored.length} 種卡片`;
+      if(missing.length) msg += `\n\n⚠️ 有 ${missing.length} 張卡片找不到對應資料：\n${missing.slice(0,5).join('、')}${missing.length>5?'…':''}`;
+      alert(msg);
+
+    }catch(err){
+      alert('讀取失敗：檔案可能損壞或格式錯誤。');
+    }
+    e.target.value = ''; // 清空，允許重複匯入同檔
+  };
+  reader.readAsText(file);
 });
 
 // ── jsPDF 產生 PDF ──────────────────────────────────────
