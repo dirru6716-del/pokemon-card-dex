@@ -701,6 +701,14 @@ body.mobile .scroll-btns{display:flex}
   border:1px solid #2a5a8a;background:#13243c;color:#7ab8ff;transition:all .15s;
 }
 .btn-deck-save:hover,.btn-deck-import:hover{background:#1a3050;border-color:#4a8ad0}
+.print-section-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;
+  color:var(--gold);letter-spacing:1px;
+  padding:10px 4px 6px;margin-top:4px;
+  border-bottom:1px solid var(--border);
+}
+.print-section-hdr span{font-size:.7rem;color:var(--text3);font-family:'Zen Kaku Gothic New',sans-serif}
 
 /* ── 列印覆蓋層 ── */
 #printOverlay{
@@ -2588,26 +2596,50 @@ function renderPrintList(){
   document.getElementById('printKindCnt').textContent = PRINT_LIST.length;
   document.getElementById('printTotalCnt').textContent = printListTotal();
 
-  el.innerHTML = PRINT_LIST.map((item,idx)=>{
-    const c = item.card;
-    const img = c.image_url || '';
-    return `<div class="print-item">
-      ${img
-        ? `<img class="print-item-img" src="${img}" alt="${esc(c.name)}" onerror="this.style.display='none'">`
-        : `<div class="print-item-img" style="display:flex;align-items:center;justify-content:center;font-size:.5rem;color:#7888b8;text-align:center;padding:2px">${esc(c.name)}</div>`
-      }
-      <div class="print-item-info">
-        <div class="print-item-name">${esc(c.name||'—')}</div>
-        <div class="print-item-sub">${esc(c.set_name||'')}${c.card_number?' #'+esc(c.card_number):''}</div>
-      </div>
-      <div class="print-item-ctrl">
-        <button class="pqty-btn" onclick="changePrintQty(${idx},-1)">－</button>
-        <span class="print-qty-num">${item.qty}</span>
-        <button class="pqty-btn" onclick="changePrintQty(${idx},1)">＋</button>
-        <button class="pqty-btn pqty-del" onclick="removePrintItem(${idx})">✕</button>
-      </div>
-    </div>`;
-  }).join('');
+  // 分類：寶可夢 → 訓練家 → 能量 → 其他
+  const SECTIONS = [
+    { key:'寶可夢', label:'🔵 寶可夢' },
+    { key:'訓練家', label:'🟠 訓練家' },
+    { key:'能量',   label:'🟢 能量' },
+    { key:'其他',   label:'⚪ 其他' },
+  ];
+
+  function sectionOf(c){
+    return SECTION_LABEL[c.card_type] || '其他';
+  }
+
+  // 保留原始索引，再依分類分群
+  const withIdx = PRINT_LIST.map((item,idx)=>({item, idx, sec:sectionOf(item.card)}));
+
+  let html = '';
+  SECTIONS.forEach(sec=>{
+    const group = withIdx.filter(x=> x.sec === sec.key);
+    if(!group.length) return;
+    const subTotal = group.reduce((s,x)=>s+x.item.qty,0);
+    html += `<div class="print-section-hdr">${sec.label}<span>${subTotal} 張</span></div>`;
+    html += group.map(({item,idx})=>{
+      const c = item.card;
+      const img = c.image_url || '';
+      return `<div class="print-item">
+        ${img
+          ? `<img class="print-item-img" src="${img}" alt="${esc(c.name)}" onerror="this.style.display='none'">`
+          : `<div class="print-item-img" style="display:flex;align-items:center;justify-content:center;font-size:.5rem;color:#7888b8;text-align:center;padding:2px">${esc(c.name)}</div>`
+        }
+        <div class="print-item-info">
+          <div class="print-item-name">${esc(c.name||'—')}</div>
+          <div class="print-item-sub">${esc(c.set_name||'')}${c.card_number?' #'+esc(c.card_number):''}</div>
+        </div>
+        <div class="print-item-ctrl">
+          <button class="pqty-btn" onclick="changePrintQty(${idx},-1)">－</button>
+          <span class="print-qty-num">${item.qty}</span>
+          <button class="pqty-btn" onclick="changePrintQty(${idx},1)">＋</button>
+          <button class="pqty-btn pqty-del" onclick="removePrintItem(${idx})">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
+
+  el.innerHTML = html;
 }
 
 function changePrintQty(idx, delta){
@@ -2761,8 +2793,16 @@ async function exportPDF(items, btn){
   btn.disabled = true;
   btn.textContent = '⏳ 預載圖片中...';
 
+  // 依分類排序：寶可夢 → 訓練家 → 能量 → 其他
+  const SEC_RANK = {'寶可夢':0,'訓練家':1,'能量':2,'其他':3};
+  const sorted = [...items].sort((a,b)=>{
+    const ra = SEC_RANK[SECTION_LABEL[a.card.card_type]] ?? 3;
+    const rb = SEC_RANK[SECTION_LABEL[b.card.card_type]] ?? 3;
+    return ra - rb;
+  });
+
   const expanded = [];
-  items.forEach(item=>{
+  sorted.forEach(item=>{
     for(let i=0;i<item.qty;i++) expanded.push(item.card);
   });
 
