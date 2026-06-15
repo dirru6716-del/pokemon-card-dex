@@ -711,6 +711,75 @@ body.mobile .scroll-btns{display:flex}
   border:1px solid #2a5a8a;background:#13243c;color:#7ab8ff;transition:all .15s;
 }
 .btn-deck-save:hover,.btn-deck-import:hover{background:#1a3050;border-color:#4a8ad0}
+.btn-deck-test{
+  width:100%;margin-top:8px;padding:11px;border-radius:8px;cursor:pointer;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:1px;
+  border:1px solid #8a4ad0;color:#d8b0ff;
+  background:linear-gradient(135deg,#3a1a5a,#2a1240);transition:all .15s;
+  box-shadow:0 3px 12px rgba(140,80,224,.2);
+}
+.btn-deck-test:hover{background:linear-gradient(135deg,#48207090,#321850);border-color:#b080ff;box-shadow:0 4px 16px rgba(140,80,224,.35)}
+
+/* ── 模擬器 Modal ── */
+.sim-modal{position:fixed;inset:0;z-index:200;display:none}
+.sim-modal.open{display:flex;align-items:center;justify-content:center}
+.sim-backdrop{position:absolute;inset:0;background:rgba(9,13,24,.8);backdrop-filter:blur(4px)}
+.sim-panel{
+  position:relative;z-index:1;
+  width:560px;max-width:94vw;height:88vh;max-height:88vh;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;display:flex;flex-direction:column;overflow:hidden;
+  animation:simPop .2s ease;
+}
+@keyframes simPop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+.sim-hdr{
+  display:flex;align-items:center;gap:8px;padding:14px 16px;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+  font-family:'Orbitron',sans-serif;font-size:.85rem;letter-spacing:1px;color:#d8b0ff;
+}
+.sim-hdr #simDeckInfo{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.72rem;color:var(--text3);font-weight:400}
+.sim-close{margin-left:auto;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;padding:2px 6px}
+.sim-close:hover{color:var(--red)}
+.sim-tabs{display:flex;gap:4px;padding:10px 12px 0;flex-shrink:0;border-bottom:1px solid var(--border)}
+.sim-tab{
+  flex:1;padding:9px 6px;border:none;border-radius:8px 8px 0 0;cursor:pointer;
+  background:transparent;color:var(--text3);font-size:.82rem;font-weight:700;
+  font-family:'Zen Kaku Gothic New',sans-serif;transition:all .15s;
+}
+.sim-tab.on{background:#2a1845;color:#d8b0ff}
+.sim-content{flex:1;overflow-y:auto;padding:14px}
+.sim-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.sim-btn-primary{
+  flex:1;min-width:140px;padding:11px;border-radius:9px;cursor:pointer;
+  background:linear-gradient(135deg,#5a2a8a,#3a1860);border:1px solid #8a4ad0;
+  color:#e8d0ff;font-size:.92rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;
+}
+.sim-btn-primary:hover{background:linear-gradient(135deg,#6a30a0,#42206e)}
+.sim-btn{
+  padding:11px 14px;border-radius:9px;cursor:pointer;
+  background:var(--surface2);border:1px solid var(--border2);color:var(--text2);
+  font-size:.88rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;
+}
+.sim-btn:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.sim-btn:disabled{opacity:.4;cursor:not-allowed}
+.sim-alert{padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:.85rem;display:none}
+.sim-alert.show{display:block}
+.sim-alert.good{background:#0e2a18;border:1px solid #2a6040;color:#70d090}
+.sim-alert.bad{background:#2a1015;border:1px solid #6a2030;color:#e08090}
+.sim-hand-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sim-card{position:relative;border-radius:6px;overflow:hidden;background:var(--bg2);border:1px solid var(--border);aspect-ratio:63/88}
+.sim-card img{width:100%;height:100%;object-fit:contain;display:block}
+.sim-card .sim-card-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:.55rem;color:#8090b8;text-align:center;padding:3px}
+.sim-card.is-new::after{content:'NEW';position:absolute;top:3px;right:3px;background:#e03040;color:#fff;font-size:.5rem;font-weight:700;padding:1px 4px;border-radius:4px;font-family:'Orbitron',sans-serif}
+.sim-draw-status{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 12px;background:var(--bg2);border-radius:8px}
+.sim-turn{font-family:'Orbitron',sans-serif;font-size:.85rem;color:#d8b0ff}
+.sim-deckcount{font-size:.82rem;color:var(--text3)}
+.sim-prob-desc{font-size:.8rem;color:var(--text3);margin-bottom:12px}
+.sim-prob-table{display:flex;flex-direction:column;gap:4px}
+.sim-prob-row{display:grid;grid-template-columns:1fr auto auto auto;gap:8px;align-items:center;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:7px;font-size:.8rem}
+.sim-prob-row.head{background:#1a2238;color:var(--text3);font-weight:700;font-size:.72rem}
+.sim-prob-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.sim-prob-val{font-family:'Orbitron',sans-serif;font-size:.78rem;color:var(--gold);text-align:right;min-width:48px}
 .print-section-hdr{
   display:flex;align-items:center;justify-content:space-between;
   font-family:'Orbitron',sans-serif;font-size:.72rem;font-weight:700;
@@ -1137,6 +1206,7 @@ body.mobile .scroll-btns{display:flex}
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
       <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
+      <button class="btn-deck-test" id="deckTestBtn">🎲 開始測試牌組</button>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn-deck-save" id="deckSaveBtn">💾 儲存牌庫</button>
         <button class="btn-deck-import" id="deckImportBtn">📂 匯入牌庫</button>
@@ -1147,12 +1217,51 @@ body.mobile .scroll-btns{display:flex}
   </div>
 </div>
 
+<!-- 🎲 牌組測試器 Modal -->
+<div class="sim-modal" id="simModal">
+  <div class="sim-backdrop" id="simBackdrop"></div>
+  <div class="sim-panel">
+    <div class="sim-hdr">
+      🎲 牌組測試器 <span id="simDeckInfo"></span>
+      <button class="sim-close" id="simClose">✕</button>
+    </div>
+    <div class="sim-tabs">
+      <button class="sim-tab on" data-tab="hand">✋ 起手牌</button>
+      <button class="sim-tab" data-tab="draw">🎴 抽牌節奏</button>
+      <button class="sim-tab" data-tab="prob">📊 機率</button>
+    </div>
+    <div class="sim-content">
+      <!-- TAB 1: 起手牌 -->
+      <div class="sim-tabpanel" id="simTab-hand">
+        <div class="sim-actions">
+          <button class="sim-btn-primary" id="drawHandBtn">🎲 抽起手牌（7張）</button>
+        </div>
+        <div class="sim-alert" id="handAlert"></div>
+        <div class="sim-hand-grid" id="handGrid"></div>
+      </div>
+      <!-- TAB 2: 抽牌節奏 -->
+      <div class="sim-tabpanel" id="simTab-draw" style="display:none">
+        <div class="sim-actions">
+          <button class="sim-btn-primary" id="startDrawBtn">▶ 開始（起手7張）</button>
+          <button class="sim-btn" id="drawOneBtn" disabled>➕ 抽一張</button>
+          <button class="sim-btn" id="resetDrawBtn" disabled>↩ 重置</button>
+        </div>
+        <div class="sim-draw-status">
+          <span class="sim-turn" id="drawTurn">第 0 回合</span>
+          <span class="sim-deckcount" id="drawDeckCount">牌庫 -- 張</span>
+        </div>
+        <div class="sim-hand-grid" id="drawHandGrid"></div>
+      </div>
+      <!-- TAB 3: 機率 -->
+      <div class="sim-tabpanel" id="simTab-prob" style="display:none">
+        <p class="sim-prob-desc">起手抽 7 張中，抽到各張卡的機率（超幾何分佈）</p>
+        <div class="sim-prob-table" id="probTable"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-// ════════════════════════════════════════════════════════
-// ★ 設定：將這裡換成你的 Google Sheets 公開 CSV 網址
-//   格式：https://docs.google.com/spreadsheets/d/{試算表ID}/export?format=csv&gid=0
-// ════════════════════════════════════════════════════════
-const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1Be63ndyhxlqeFXjMlmtfMkr-M9cm-ElxfXDCrJLCTQC-jv6eY3qQJ0rL1MveHzQ_tgXVqC0/pub?output=csv';
 
 // ─── STATE ───────────────────────────────────────────────
 let ALL=[], FILTERED=[], SEL=null;
@@ -2707,6 +2816,143 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
   if(!PRINT_LIST.length) return;
   if(confirm('確定清空列印清單？')) { PRINT_LIST=[]; updatePrintBadge(); renderPrintList(); }
 });
+
+// ════════════════════════════════════════════════════════
+// 🎲 牌組測試器
+// ════════════════════════════════════════════════════════
+let SIM_DECK = [];
+
+document.getElementById('deckTestBtn').addEventListener('click',()=>{
+  if(!PRINT_LIST.length){ alert('清單是空的，請先加入卡片。'); return; }
+  SIM_DECK = [];
+  PRINT_LIST.forEach(item=>{ for(let i=0;i<item.qty;i++) SIM_DECK.push(item.card); });
+
+  const total = SIM_DECK.length;
+  let info = `（${total} 張`;
+  if(total!==60) info += '，標準為 60 張';
+  info += '）';
+  document.getElementById('simDeckInfo').textContent = info;
+
+  document.getElementById('simModal').classList.add('open');
+  switchSimTab('hand');
+  drawOpeningHand();
+  buildProbTable();
+});
+
+document.getElementById('simClose').addEventListener('click',()=>document.getElementById('simModal').classList.remove('open'));
+document.getElementById('simBackdrop').addEventListener('click',()=>document.getElementById('simModal').classList.remove('open'));
+
+document.querySelectorAll('.sim-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>switchSimTab(tab.dataset.tab));
+});
+function switchSimTab(name){
+  document.querySelectorAll('.sim-tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===name));
+  ['hand','draw','prob'].forEach(t=>{
+    document.getElementById('simTab-'+t).style.display = (t===name)?'':'none';
+  });
+}
+
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function isBasicPokemon(c){ return c.card_type==='基礎'; }
+
+function simCardHTML(c, isNew){
+  const img=c.image_url||'';
+  return `<div class="sim-card${isNew?' is-new':''}">
+    ${img
+      ? `<img src="${img}" alt="${esc(c.name||'')}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="sim-card-fallback" style="display:none">${esc(c.name||'')}</div>`
+      : `<div class="sim-card-fallback">${esc(c.name||'')}</div>`}
+  </div>`;
+}
+
+// 起手牌
+function drawOpeningHand(){
+  const hand = shuffle(SIM_DECK).slice(0,7);
+  document.getElementById('handGrid').innerHTML = hand.map(c=>simCardHTML(c,false)).join('');
+  const basics = hand.filter(isBasicPokemon).length;
+  const alert = document.getElementById('handAlert');
+  if(basics===0){
+    alert.className='sim-alert show bad';
+    alert.textContent='⚠️ 沒有基礎寶可夢，必須重抽（Mulligan）！';
+  }else{
+    alert.className='sim-alert show good';
+    alert.textContent=`✓ 開局可行，手牌有 ${basics} 隻基礎寶可夢。`;
+  }
+}
+document.getElementById('drawHandBtn').addEventListener('click',drawOpeningHand);
+
+// 抽牌節奏
+let SIM_PILE=[], SIM_HAND=[], SIM_TURN=0;
+function startDrawSim(){
+  SIM_PILE = shuffle(SIM_DECK);
+  SIM_HAND = SIM_PILE.splice(0,7);
+  SIM_TURN = 0;
+  renderDrawSim(SIM_HAND.map(()=>false));
+  document.getElementById('drawOneBtn').disabled=false;
+  document.getElementById('resetDrawBtn').disabled=false;
+}
+function drawOne(){
+  if(!SIM_PILE.length){ alert('牌庫已抽完！'); return; }
+  SIM_TURN++;
+  SIM_HAND.push(SIM_PILE.shift());
+  renderDrawSim(SIM_HAND.map((_,i)=> i===SIM_HAND.length-1));
+}
+function resetDrawSim(){
+  SIM_PILE=[]; SIM_HAND=[]; SIM_TURN=0;
+  document.getElementById('drawHandGrid').innerHTML='';
+  document.getElementById('drawTurn').textContent='第 0 回合';
+  document.getElementById('drawDeckCount').textContent='牌庫 -- 張';
+  document.getElementById('drawOneBtn').disabled=true;
+  document.getElementById('resetDrawBtn').disabled=true;
+}
+function renderDrawSim(newFlags){
+  document.getElementById('drawTurn').textContent=`第 ${SIM_TURN} 回合`;
+  document.getElementById('drawDeckCount').textContent=`牌庫 ${SIM_PILE.length} 張`;
+  document.getElementById('drawHandGrid').innerHTML =
+    SIM_HAND.map((c,i)=>simCardHTML(c, newFlags[i])).join('');
+}
+document.getElementById('startDrawBtn').addEventListener('click',startDrawSim);
+document.getElementById('drawOneBtn').addEventListener('click',drawOne);
+document.getElementById('resetDrawBtn').addEventListener('click',resetDrawSim);
+
+// 機率（超幾何分佈）
+function hyperAtLeast(N, K, n, k){
+  function comb(a,b){
+    if(b<0||b>a) return 0;
+    b=Math.min(b,a-b);
+    let r=1;
+    for(let i=0;i<b;i++) r=r*(a-i)/(i+1);
+    return r;
+  }
+  let pLess=0;
+  for(let x=0;x<k;x++) pLess += comb(K,x)*comb(N-K,n-x)/comb(N,n);
+  return Math.max(0, Math.min(1, 1-pLess));
+}
+function buildProbTable(){
+  const N = SIM_DECK.length;
+  const counts = {};
+  SIM_DECK.forEach(c=>{ const k=c.name||'?'; counts[k]=(counts[k]||0)+1; });
+  const rows = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+
+  let html = `<div class="sim-prob-row head">
+    <span>卡牌</span><span class="sim-prob-val">張數</span>
+    <span class="sim-prob-val">≥1</span><span class="sim-prob-val">≥2</span>
+  </div>`;
+  html += rows.map(([name,cnt])=>{
+    const p1=(hyperAtLeast(N,cnt,7,1)*100).toFixed(1);
+    const p2=(hyperAtLeast(N,cnt,7,2)*100).toFixed(1);
+    return `<div class="sim-prob-row">
+      <span class="sim-prob-name">${esc(name)}</span>
+      <span class="sim-prob-val">${cnt}</span>
+      <span class="sim-prob-val">${p1}%</span>
+      <span class="sim-prob-val">${p2}%</span>
+    </div>`;
+  }).join('');
+  document.getElementById('probTable').innerHTML = html;
+}
 
 // ── 儲存牌庫（下載 JSON）──────────────────────────────────
 document.getElementById('deckSaveBtn').addEventListener('click',()=>{
