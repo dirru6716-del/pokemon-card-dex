@@ -2966,19 +2966,16 @@ document.getElementById('deckSaveBtn').addEventListener('click',()=>{
   const name = prompt('幫這個牌庫取個名字：', '我的牌庫_' + new Date().toLocaleDateString('zh-TW').replace(/\//g,''));
   if(name===null) return; // 取消
 
+  const now = new Date().toISOString();
   const deck = {
-    type: 'pokemon-deck',
-    version: 1,
+    id: 'deck_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8),
     name: name || '未命名牌庫',
-    savedAt: new Date().toISOString(),
-    total: printListTotal(),
-    cards: PRINT_LIST.map(i=>({
-      card_id: i.card.card_id,
-      name: i.card.name,
-      card_number: i.card.card_number || '',
-      set_name: i.card.set_name || '',
-      qty: i.qty,
+    createdAt: now,
+    entries: PRINT_LIST.map(i=>({
+      cardId: i.card.card_id,
+      count: i.qty,
     })),
+    updatedAt: now,
   };
 
   const blob = new Blob([JSON.stringify(deck,null,2)], {type:'application/json'});
@@ -3008,28 +3005,25 @@ document.getElementById('deckFileInput').addEventListener('change',(e)=>{
   reader.onload = (ev)=>{
     try{
       const deck = JSON.parse(ev.target.result);
-      if(deck.type !== 'pokemon-deck' || !Array.isArray(deck.cards)){
-        alert('檔案格式不正確，這不是牌庫檔案。');
+      if(!Array.isArray(deck.entries)){
+        alert('檔案格式不正確：找不到 entries 陣列。');
         return;
       }
 
-      // 用 card_id 對回完整卡片資料；對不到的用 card_number 再試
+      // 用 cardId 對回完整卡片資料
       const restored = [];
       const missing = [];
-      deck.cards.forEach(item=>{
-        let card = ALL.find(c=> c.card_id === item.card_id);
-        if(!card && item.card_number){
-          card = ALL.find(c=> c.card_number === item.card_number);
-        }
+      deck.entries.forEach(item=>{
+        const card = ALL.find(c=> String(c.card_id) === String(item.cardId));
         if(card){
-          restored.push({ card, qty: item.qty||1 });
+          restored.push({ card, qty: item.count||1 });
         }else{
-          missing.push(item.name || item.card_id);
+          missing.push(item.cardId);
         }
       });
 
       if(!restored.length){
-        alert('匯入失敗：找不到任何對應的卡片（可能 CSV 資料不同步）。');
+        alert('匯入失敗：找不到任何對應的卡片（可能 card_id 不同步）。');
         return;
       }
 
@@ -3052,7 +3046,7 @@ document.getElementById('deckFileInput').addEventListener('change',(e)=>{
       document.getElementById('printDrawer').classList.add('open');
 
       let msg = `✅ 已匯入「${deck.name||'牌庫'}」\n共 ${restored.length} 種卡片`;
-      if(missing.length) msg += `\n\n⚠️ 有 ${missing.length} 張卡片找不到對應資料：\n${missing.slice(0,5).join('、')}${missing.length>5?'…':''}`;
+      if(missing.length) msg += `\n\n⚠️ 有 ${missing.length} 個 cardId 找不到對應資料：\n${missing.slice(0,5).join('、')}${missing.length>5?'…':''}`;
       alert(msg);
 
     }catch(err){
