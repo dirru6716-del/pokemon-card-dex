@@ -2983,18 +2983,60 @@ function buildProbTable(){
 }
 
 // ── 儲存牌庫（下載 JSON）──────────────────────────────────
+// ── 儲存牌庫時的卡片置換規則 ─────────────────────────────
+// 用「名稱 + 擴充包關鍵字」鎖定來源卡，換成指定的目標版本（依名稱+擴充包找 ALL）
+// 目的：避免儲存出去的牌庫含有別的網站系統讀不到的稀有版本卡
+const SAVE_SUBSTITUTIONS = [
+  { matchName:'基本超能量', matchSetIncludes:null, toName:'基本超能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本惡能量', matchSetIncludes:null, toName:'基本惡能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本火能量', matchSetIncludes:null, toName:'基本火能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本水能量', matchSetIncludes:null, toName:'基本水能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本雷能量', matchSetIncludes:null, toName:'基本雷能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本超能量', matchSetIncludes:null, toName:'基本超能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本鬥能量', matchSetIncludes:null, toName:'基本鬥能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本鋼能量', matchSetIncludes:null, toName:'基本鋼能量', toSetIncludes:'雙ex初階牌組' },
+  { matchName:'基本草能量', matchSetIncludes:null, toName:'基本草能量', toSetIncludes:'雙ex初階牌組' },
+  // 老大的指令（魁奇思版）→ 換成 100對戰收藏 烏羽版
+  { matchName:'老大的指令', matchSetIncludes:null, toName:'老大的指令', toSetIncludes:'100對戰收藏' },
+];
+
+// 找出某張卡應該被換成哪個目標版本（找不到目標就維持原卡）
+function resolveSubstitution(card){
+  const rule = SAVE_SUBSTITUTIONS.find(r=>
+    card.name === r.matchName &&
+    (!r.matchSetIncludes || (card.set_name||'').includes(r.matchSetIncludes))
+  );
+  if(!rule) return card;
+
+  const target = ALL.find(c=>
+    c.name === rule.toName &&
+    (c.set_name||'').includes(rule.toSetIncludes)
+  );
+  return target || card; // 找不到目標版本就保留原卡，避免存出壞資料
+}
+
 document.getElementById('deckSaveBtn').addEventListener('click',()=>{
   if(!PRINT_LIST.length){ alert('清單是空的，請先加入卡片。'); return; }
 
   const name = prompt('幫這個牌庫取個名字：', '我的牌庫_' + new Date().toLocaleDateString('zh-TW').replace(/\//g,''));
   if(name===null) return; // 取消
 
+  // 套用置換規則：把名稱/數量相同的卡合併，避免重複列出
+  const merged = new Map(); // card_id -> {card, qty}
+  PRINT_LIST.forEach(item=>{
+    const finalCard = resolveSubstitution(item.card);
+    const key = finalCard.card_id;
+    if(merged.has(key)) merged.get(key).qty += item.qty;
+    else merged.set(key, { card: finalCard, qty: item.qty });
+  });
+  const finalList = [...merged.values()];
+
   const now = new Date().toISOString();
   const deck = {
     id: 'deck_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8),
     name: name || '未命名牌庫',
     createdAt: now,
-    entries: PRINT_LIST.map(i=>({
+    entries: finalList.map(i=>({
       cardId: i.card.card_id,
       count: i.qty,
     })),
