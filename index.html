@@ -2427,27 +2427,50 @@ function renderDeckList(cards){
     });
   });
 
-  // 牌組 PDF 輸出按鈕（有可列印的卡才顯示）
+  // 牌組「加入列印清單」按鈕（有可加入的卡才顯示）
   const printable = enriched.filter(c=>c._csv);
   if(printable.length){
     const totalQty = enriched.reduce((s,c)=>s+c.qty,0);
-    html = `<button class="btn-print-pdf" style="margin:4px 0 12px" id="deckPdfBtn">
-      📄 將整副牌組輸出 A4 PDF（${totalQty} 張）
+    const unmatched = enriched.filter(c=>!c._csv).length;
+    html = `<button class="btn-print-pdf" style="margin:4px 0 12px" id="deckToPrintBtn">
+      🖨️ 將整副牌組加入列印清單（${totalQty} 張）
     </button>` + html;
+    if(unmatched){
+      html = `<div class="sim-alert show bad" style="margin-bottom:10px">
+        ⚠️ 有 ${unmatched} 種卡片找不到對應圖片資料，無法加入清單，請留意上方標示。
+      </div>` + html;
+    }
   }
 
   el.innerHTML = html;
 
-  // 牌組 PDF 按鈕事件
-  const pdfBtn = document.getElementById('deckPdfBtn');
-  if(pdfBtn){
+  // 牌組「加入列印清單」按鈕事件
+  const toPrintBtn = document.getElementById('deckToPrintBtn');
+  if(toPrintBtn){
     window._deckCards = enriched;
-    pdfBtn.addEventListener('click', ()=>{
-      const items = window._deckCards
-        .filter(c=>c._csv)
-        .map(c=>({ card:c._csv, qty:c.qty }));
-      if(!items.length){ alert('牌組中沒有可輸出的卡牌'); return; }
-      exportPDF(items, pdfBtn);
+    toPrintBtn.addEventListener('click', ()=>{
+      const items = window._deckCards.filter(c=>c._csv);
+      if(!items.length){ alert('牌組中沒有可加入的卡牌'); return; }
+
+      let addedKinds = 0, addedQty = 0;
+      items.forEach(c=>{
+        const card = c._csv;
+        const idx = PRINT_LIST.findIndex(i=>i.card.card_id===card.card_id);
+        if(idx>=0){
+          PRINT_LIST[idx].qty = Math.min(PRINT_LIST[idx].qty + c.qty, 99);
+        }else{
+          PRINT_LIST.push({card, qty:c.qty});
+          addedKinds++;
+        }
+        addedQty += c.qty;
+      });
+
+      updatePrintBadge();
+      renderPrintList();
+      document.getElementById('printDrawer').classList.add('open');
+
+      toPrintBtn.textContent = '✅ 已加入列印清單！';
+      setTimeout(()=>{ toPrintBtn.textContent = `🖨️ 將整副牌組加入列印清單（${enriched.reduce((s,c)=>s+c.qty,0)} 張）`; }, 1800);
     });
   }
 
