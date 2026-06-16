@@ -2478,9 +2478,16 @@ function renderDeckList(cards){
   el.querySelectorAll('.deck-card-row').forEach(row=>{
     row.addEventListener('click',()=>{
       const cid = row.dataset.cid;
-      if(!cid){ setDeckStatus('此卡牌不在目前資料庫中','err'); return; }
+      const cardName = row.querySelector('.deck-card-name')?.textContent || '此卡片';
+      if(!cid){
+        alert(`「${cardName}」找不到對應的卡片資料（可能是日版限定或尚未收錄的版本），無法顯示圖片詳情。\n\n牌組其他卡片不受影響。`);
+        return;
+      }
       const card = ALL.find(a=>a.card_id===cid);
-      if(!card){ setDeckStatus('此卡牌不在目前資料庫中（可能是未爬取的版本）','err'); return; }
+      if(!card){
+        alert(`「${cardName}」在資料庫中找不到完整資料（可能尚未爬取此版本）。\n\n牌組其他卡片不受影響。`);
+        return;
+      }
 
       // 高亮選中
       el.querySelectorAll('.deck-card-row').forEach(r=>r.classList.remove('sel'));
