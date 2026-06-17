@@ -3252,6 +3252,13 @@ async function exportPDF(items, btn){
   btn.disabled = true;
   btn.textContent = '⏳ 預載圖片中...';
 
+  // ★ 必須在使用者點擊的同步流程內先開分頁，否則 PDF 產好後（非同步操作完成後）
+  //   再呼叫 window.open() 會被瀏覽器的彈出視窗封鎖器擋下（iOS Safari 特別嚴格）
+  const preOpenedTab = window.open('', '_blank');
+  if(preOpenedTab){
+    preOpenedTab.document.write('<title>產生 PDF 中…</title><body style="background:#0d1320;color:#9ab;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ PDF 產生中，請稍候…</p></body>');
+  }
+
   // 依分類排序：寶可夢 → 訓練家 → 能量 → 其他
   const SEC_RANK = {'寶可夢':0,'訓練家':1,'能量':2,'其他':3};
   const sorted = [...items].sort((a,b)=>{
@@ -3303,11 +3310,32 @@ async function exportPDF(items, btn){
     }
     drawCutLines(pdf,startX,startY,cardW,cardH);
 
-    pdf.save(`pokemon_${expanded.length}張.pdf`);
-    btn.textContent='✅ 下載完成！';
+    // 用 blob 在「新分頁」開啟 PDF，原頁面（列印清單/牌組）完全不受影響
+    // 不用 pdf.save()，因為 iOS Safari 會把下載當成同頁導航，
+    // 使用者按上一頁時會導致整頁重新載入、清單被清空
+    const pdfBlob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+
+    if(preOpenedTab && !preOpenedTab.closed){
+      preOpenedTab.location.href = blobUrl;
+    }else{
+      // 預先開的分頁被擋下或已關閉 → 退回下載方式
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `pokemon_${expanded.length}張.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      alert('瀏覽器擋下了新分頁開啟，已改用下載方式。\n建議允許本網站的彈出視窗，之後可在新分頁直接預覽 PDF。');
+    }
+
+    setTimeout(()=>URL.revokeObjectURL(blobUrl), 60000); // 給新分頁足夠時間載入後才釋放
+
+    btn.textContent='✅ 已在新分頁開啟！';
     setTimeout(()=>{ btn.textContent=originalText; btn.disabled=false; },2000);
 
   } catch(err){
+    if(preOpenedTab && !preOpenedTab.closed) preOpenedTab.close();
     alert('PDF 產生失敗：'+err.message);
     btn.textContent=originalText;
     btn.disabled=false;
