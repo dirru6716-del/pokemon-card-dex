@@ -2148,12 +2148,15 @@ async function fetchDeck(){
 
     const cards = deckRegion==='tw'
       ? parseTWDeck(html)
-      : parseJPDeck(html);
+      : await parseJPDeck(html);
 
     if(!cards.length) throw new Error('找不到卡牌資料，請確認代碼是否正確');
 
     const total = cards.reduce((s,c)=>s+c.qty,0);
-    setDeckStatus(`✓ 共 ${cards.length} 種卡牌 / ${total} 張`,'ok');
+    const tcgdexCount = cards.filter(c=>c._fromTcgdex).length;
+    let statusMsg = `✓ 共 ${cards.length} 種卡牌 / ${total} 張`;
+    if(tcgdexCount) statusMsg += `（${tcgdexCount} 種透過 TCGdex 對照）`;
+    setDeckStatus(statusMsg,'ok');
     renderDeckList(cards);
 
   } catch(e){
@@ -2257,7 +2260,7 @@ const JP_TW_NAMES = {
 // ── 日本版解析 ───────────────────────────────────────────
 // print.html 結構：每個分類有自己的 <table>
 // 表格第一列第一格是分類名（ポケモン/グッズ等）
-function parseJPDeck(html){
+async function parseJPDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
   const cards = [];
 
@@ -2287,6 +2290,10 @@ function parseJPDeck(html){
     }
     return null;
   }
+
+  // 第一輪：用既有方式比對（編號 / 名稱表 / 基本能量表）
+  // 配不到的記下來，留給 TCGdex 補
+  const unresolved = []; // { rowIndex, name, num, set, qty, section }
 
   doc.querySelectorAll('table').forEach(table=>{
     table.querySelectorAll('tr').forEach(row=>{
@@ -2340,7 +2347,7 @@ function parseJPDeck(html){
         if(twName) matched = ALL.find(c=> c.name === twName) || null;
       }
 
-      cards.push({
+      const entry = {
         card_id: matched?.card_id || '',
         name:    matched?.name || name,
         qty,
@@ -2348,11 +2355,94 @@ function parseJPDeck(html){
           ? (matched.set_name||'') + (matched.card_number ? ' #'+matched.card_number : '')
           : set + (num ? ' '+num : ''),
         section: curSection || (matched ? csvSection(matched)||'訓練家' : '訓練家'),
-      });
+      };
+
+      cards.push(entry);
+
+      // 還沒配到的卡，留給 TCGdex 補（要有日文名稱才查得到）
+      if(!matched && name){
+        unresolved.push({ entry, jpName:name, num, set });
+      }
     });
   });
 
+  // 第二輪：用 TCGdex 補配不到的卡（平行查詢，限制並發數）
+  if(unresolved.length){
+    await resolveViaTcgdex(unresolved);
+  }
+
   return cards;
+}
+
+// ── TCGdex 對照：日文名稱/編號 → 繁中名稱 + 對回我們 CSV ──
+function loadTcgdexCache(){
+  try{ return JSON.parse(localStorage.getItem('tcgdexCache')||'{}'); }
+  catch(e){ return {}; } // localStorage 不可用（隱私模式等）就用空快取，不讓整頁掛掉
+}
+const TCGDEX_CACHE = loadTcgdexCache();
+function saveTcgdexCache(){
+  try{ localStorage.setItem('tcgdexCache', JSON.stringify(TCGDEX_CACHE)); }catch(e){}
+}
+
+async function resolveViaTcgdex(unresolvedList){
+  const CONCURRENCY = 4;
+  let idx = 0;
+
+  async function worker(){
+    while(idx < unresolvedList.length){
+      const item = unresolvedList[idx++];
+      try{
+        const twName = await tcgdexLookupByJpName(item.jpName);
+        if(twName){
+          const matched = ALL.find(c=> c.name === twName);
+          if(matched){
+            item.entry.card_id = matched.card_id;
+            item.entry.name    = matched.name;
+            item.entry.sub     = (matched.set_name||'') + (matched.card_number ? ' #'+matched.card_number : '');
+            item.entry.section = SECTION_LABEL[matched.card_type] || item.entry.section;
+            item.entry._fromTcgdex = true;
+          }
+        }
+      }catch(e){ /* 查詢失敗就維持日文原樣 */ }
+    }
+  }
+
+  await Promise.all(Array.from({length:Math.min(CONCURRENCY,unresolvedList.length)},()=>worker()));
+  saveTcgdexCache();
+}
+
+// 用日文卡名查 TCGdex：先搜尋日文取得卡片 id，再用該 id 查繁中名稱
+async function tcgdexLookupByJpName(jpName){
+  if(TCGDEX_CACHE[jpName] !== undefined) return TCGDEX_CACHE[jpName] || null;
+
+  try{
+    // 1) 用日文名稱搜尋，取得候選卡片（含全域唯一 id）
+    const searchUrl = `https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(jpName)}`;
+    const res = await fetch(searchUrl);
+    if(!res.ok) throw new Error('tcgdex search failed');
+    const list = await res.json();
+    if(!Array.isArray(list) || !list.length){
+      TCGDEX_CACHE[jpName] = null;
+      return null;
+    }
+
+    // 取名稱完全相符的第一筆（避免抓到部分比對的錯卡）
+    const exact = list.find(c=>c.name===jpName) || list[0];
+
+    // 2) 用同一個 id 查繁中版本
+    const zhUrl = `https://api.tcgdex.net/v2/zh-tw/cards/${exact.id}`;
+    const zhRes = await fetch(zhUrl);
+    if(!zhRes.ok) throw new Error('tcgdex zh-tw fetch failed');
+    const zhCard = await zhRes.json();
+
+    const twName = zhCard?.name || null;
+    TCGDEX_CACHE[jpName] = twName;
+    return twName;
+
+  }catch(e){
+    TCGDEX_CACHE[jpName] = null;
+    return null;
+  }
 }
 
 // ── 渲染牌組列表 ─────────────────────────────────────────
