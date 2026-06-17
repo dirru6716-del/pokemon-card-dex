@@ -1165,6 +1165,12 @@ body.mobile .scroll-btns{display:flex}
         <button class="btn-deck-fetch" id="deckFetchBtn">查詢</button>
       </div>
       <div class="deck-status" id="deckStatus"></div>
+      <div style="text-align:right;margin-top:2px">
+        <a href="javascript:void(0)" id="clearTcgdexCacheLink"
+           style="font-size:.7rem;color:var(--text3);text-decoration:underline;cursor:pointer">
+          清除 TCGdex 對照快取
+        </a>
+      </div>
     </div>
 
     <div class="deck-list" id="deckList">
@@ -2120,6 +2126,11 @@ document.getElementById('deckCodeInput').addEventListener('keydown',e=>{
   if(e.key==='Enter') fetchDeck();
 });
 document.getElementById('deckFetchBtn').addEventListener('click', fetchDeck);
+document.getElementById('clearTcgdexCacheLink')?.addEventListener('click', ()=>{
+  Object.keys(TCGDEX_CACHE).forEach(k=>delete TCGDEX_CACHE[k]);
+  saveTcgdexCache();
+  alert('已清除 TCGdex 對照快取，下次查詢會重新向 TCGdex 查詢。');
+});
 
 async function fetchDeck(){
   const code = document.getElementById('deckCodeInput').value.trim();
@@ -2419,27 +2430,37 @@ async function tcgdexLookupByJpName(jpName){
     // 1) 用日文名稱搜尋，取得候選卡片（含全域唯一 id）
     const searchUrl = `https://api.tcgdex.net/v2/ja/cards?name=${encodeURIComponent(jpName)}`;
     const res = await fetch(searchUrl);
-    if(!res.ok) throw new Error('tcgdex search failed');
+    if(!res.ok){
+      console.warn('[TCGdex] 搜尋失敗', jpName, 'HTTP', res.status);
+      throw new Error('tcgdex search failed: '+res.status);
+    }
     const list = await res.json();
     if(!Array.isArray(list) || !list.length){
+      console.warn('[TCGdex] 查無此卡', jpName);
       TCGDEX_CACHE[jpName] = null;
       return null;
     }
 
     // 取名稱完全相符的第一筆（避免抓到部分比對的錯卡）
     const exact = list.find(c=>c.name===jpName) || list[0];
+    console.info('[TCGdex] 找到候選', jpName, '→ id:', exact.id, exact.name===jpName?'(完全相符)':'(模糊比對:'+exact.name+')');
 
     // 2) 用同一個 id 查繁中版本
     const zhUrl = `https://api.tcgdex.net/v2/zh-tw/cards/${exact.id}`;
     const zhRes = await fetch(zhUrl);
-    if(!zhRes.ok) throw new Error('tcgdex zh-tw fetch failed');
+    if(!zhRes.ok){
+      console.warn('[TCGdex] 繁中版本查無', exact.id, 'HTTP', zhRes.status, '（可能繁中尚未收錄此卡）');
+      throw new Error('tcgdex zh-tw fetch failed: '+zhRes.status);
+    }
     const zhCard = await zhRes.json();
 
     const twName = zhCard?.name || null;
+    console.info('[TCGdex] 對照成功', jpName, '→', twName);
     TCGDEX_CACHE[jpName] = twName;
     return twName;
 
   }catch(e){
+    console.warn('[TCGdex] 對照失敗', jpName, '-', e.message);
     TCGDEX_CACHE[jpName] = null;
     return null;
   }
