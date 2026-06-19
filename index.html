@@ -722,6 +722,66 @@ body.mobile .scroll-btns{display:flex}
 
 /* ── 模擬器 Modal ── */
 .sim-modal{position:fixed;inset:0;z-index:200;display:none}
+
+/* 🔄 更改圖片選擇器 */
+.imgpick-modal{position:fixed;inset:0;z-index:250;display:none}
+.imgpick-modal.open{display:flex;align-items:center;justify-content:center}
+.imgpick-backdrop{position:absolute;inset:0;background:rgba(9,13,24,.82);backdrop-filter:blur(4px)}
+.imgpick-panel{
+  position:relative;z-index:1;width:600px;max-width:94vw;height:82vh;max-height:82vh;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  display:flex;flex-direction:column;overflow:hidden;animation:simPop .2s ease;
+}
+.imgpick-hdr{
+  display:flex;align-items:center;gap:8px;padding:14px 16px;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:.95rem;font-weight:700;color:var(--gold);
+}
+.imgpick-close{margin-left:auto;background:transparent;border:none;color:var(--text3);font-size:1.2rem;cursor:pointer;padding:2px 6px}
+.imgpick-close:hover{color:var(--red)}
+.imgpick-grid{
+  flex:1;overflow-y:auto;padding:14px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;
+}
+.imgpick-card{
+  position:relative;border-radius:8px;overflow:hidden;cursor:pointer;
+  background:var(--bg2);border:2px solid transparent;transition:all .15s;
+}
+.imgpick-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.imgpick-card.cur{border-color:#4a8ad0}
+.imgpick-card img{width:100%;aspect-ratio:63/88;object-fit:contain;display:block}
+.imgpick-noimg{width:100%;aspect-ratio:63/88;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#7888b8;text-align:center;padding:4px}
+.imgpick-set{font-size:.62rem;color:var(--text3);padding:4px 6px;text-align:center;line-height:1.3;border-top:1px solid var(--border)}
+.imgpick-curbadge{
+  position:absolute;top:4px;left:4px;background:#4a8ad0;color:#fff;
+  font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:5px;
+  font-family:'Orbitron',sans-serif;
+}
+.deck-change-img{
+  margin-top:4px;padding:3px 8px;border-radius:6px;cursor:pointer;
+  background:#13243c;border:1px solid #2a5a8a;color:#7ab8ff;
+  font-size:.68rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;transition:all .15s;
+}
+.deck-change-img:hover{background:#1a3050;border-color:#4a8ad0}
+.deck-unmatched-btns{display:flex;gap:6px;margin-top:4px;flex-wrap:wrap}
+.deck-copy-name,.deck-manual-search{
+  padding:3px 8px;border-radius:6px;cursor:pointer;
+  font-size:.68rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;transition:all .15s;
+}
+.deck-copy-name{background:#2a2440;border:1px solid #5a4a8a;color:#b8a0ff}
+.deck-copy-name:hover{background:#352a55;border-color:#8a6ad0}
+.deck-manual-search{background:#13243c;border:1px solid #2a5a8a;color:#7ab8ff}
+.deck-manual-search:hover{background:#1a3050;border-color:#4a8ad0}
+.manual-search-input{
+  width:100%;padding:10px 12px;border-radius:8px;box-sizing:border-box;
+  background:var(--bg2);border:1px solid var(--border2);color:var(--text);
+  font-size:.9rem;font-family:'Zen Kaku Gothic New',sans-serif;
+}
+.manual-search-input:focus{outline:none;border-color:var(--gold)}
+.manual-search-hint{
+  grid-column:1/-1;text-align:center;color:var(--text3);
+  font-size:.85rem;padding:30px 10px;
+}
 .sim-modal.open{display:flex;align-items:center;justify-content:center}
 .sim-backdrop{position:absolute;inset:0;background:rgba(9,13,24,.8);backdrop-filter:blur(4px)}
 .sim-panel{
@@ -1220,6 +1280,34 @@ body.mobile .scroll-btns{display:flex}
       <input type="file" id="deckFileInput" accept=".json,application/json" style="display:none">
       <button class="btn-print-clear" id="printClearBtn">✕ 清空清單</button>
     </div>
+  </div>
+</div>
+
+<!-- 🔄 更改圖片選擇器 Modal -->
+<div class="imgpick-modal" id="imgPickerModal">
+  <div class="imgpick-backdrop" id="imgPickerBackdrop"></div>
+  <div class="imgpick-panel">
+    <div class="imgpick-hdr">
+      <span id="imgPickerTitle">更改圖片</span>
+      <button class="imgpick-close" id="imgPickerClose">✕</button>
+    </div>
+    <div class="imgpick-grid" id="imgPickerGrid"></div>
+  </div>
+</div>
+
+<!-- 🔍 手動查詢更換 Modal -->
+<div class="imgpick-modal" id="manualSearchModal">
+  <div class="imgpick-backdrop" id="manualSearchBackdrop"></div>
+  <div class="imgpick-panel">
+    <div class="imgpick-hdr">
+      <span id="manualSearchTitle">手動查詢替換</span>
+      <button class="imgpick-close" id="manualSearchClose">✕</button>
+    </div>
+    <div style="padding:10px 14px 0">
+      <input type="text" id="manualSearchInput" class="manual-search-input"
+        placeholder="輸入卡片名稱關鍵字，例如：土龍弟弟">
+    </div>
+    <div class="imgpick-grid" id="manualSearchGrid"></div>
   </div>
 </div>
 
@@ -2158,6 +2246,10 @@ document.getElementById('deckCodeInput').addEventListener('keydown',e=>{
   if(e.key==='Enter') fetchDeck();
 });
 document.getElementById('deckFetchBtn').addEventListener('click', fetchDeck);
+document.getElementById('imgPickerClose')?.addEventListener('click',()=>document.getElementById('imgPickerModal').classList.remove('open'));
+document.getElementById('imgPickerBackdrop')?.addEventListener('click',()=>document.getElementById('imgPickerModal').classList.remove('open'));
+document.getElementById('manualSearchClose')?.addEventListener('click',()=>document.getElementById('manualSearchModal').classList.remove('open'));
+document.getElementById('manualSearchBackdrop')?.addEventListener('click',()=>document.getElementById('manualSearchModal').classList.remove('open'));
 document.getElementById('clearTcgdexCacheLink')?.addEventListener('click', ()=>{
   Object.keys(TCGDEX_CACHE).forEach(k=>delete TCGDEX_CACHE[k]);
   saveTcgdexCache();
@@ -2546,15 +2638,25 @@ function renderDeckList(cards){
     return;
   }
 
-  // 對應 CSV 資料補充圖片
+  // 對應 CSV 資料補充圖片（保留全域參考，供「更改圖片」更新）
   const enriched = cards.map(c=>{
     const csv = c.card_id ? ALL.find(a=>a.card_id===c.card_id) : null;
     return {...c, _csv: csv};
   });
+  window._deckEnriched = enriched;
+
+  renderDeckListInner();
+}
+
+// 實際繪製（換圖後可重複呼叫）
+function renderDeckListInner(){
+  const el = document.getElementById('deckList');
+  const enriched = window._deckEnriched || [];
 
   // 分組
   const groupMap = {};
-  enriched.forEach(c=>{
+  enriched.forEach((c, idx)=>{
+    c._idx = idx; // 記住在 enriched 裡的索引
     let grp;
     if(c.section){
       grp = c.section;
@@ -2583,8 +2685,10 @@ function renderDeckList(cards){
       const imgSrc  = c._csv?.image_url || '';
       const sub     = c.sub || '';
       const nameShow= c._csv?.name || c.name || '—';
+      // 有對到 CSV 的卡才顯示「更改圖片」（要有 card_id 才能找同名版本）
+      const canChange = !!c._csv;
       html += `
-        <div class="deck-card-row" data-cid="${c.card_id||''}">
+        <div class="deck-card-row" data-cid="${c.card_id||''}" data-idx="${c._idx}">
           ${imgSrc
             ? `<img class="deck-card-thumb" src="${imgSrc}" alt="${esc(nameShow)}"
                 onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${imgSrc}')+'&w=80&output=jpg'">`
@@ -2593,6 +2697,13 @@ function renderDeckList(cards){
           <div class="deck-card-info">
             <div class="deck-card-name">${esc(nameShow)}</div>
             <div class="deck-card-sub">${esc(sub)}</div>
+            ${canChange
+              ? `<button class="deck-change-img" data-changeidx="${c._idx}">🔄 更改圖片</button>`
+              : `<div class="deck-unmatched-btns">
+                   <button class="deck-copy-name" data-copyidx="${c._idx}">📋 複製名稱</button>
+                   <button class="deck-manual-search" data-manualidx="${c._idx}">🔍 手動查詢更換</button>
+                 </div>`
+            }
           </div>
           <div class="deck-card-qty">×${c.qty}</div>
         </div>`;
@@ -2624,17 +2735,14 @@ function renderDeckList(cards){
       const items = window._deckCards.filter(c=>c._csv);
       if(!items.length){ alert('牌組中沒有可加入的卡牌'); return; }
 
-      let addedKinds = 0, addedQty = 0;
       items.forEach(c=>{
-        const card = c._csv;
+        const card = c._csv; // 用（可能換過的）版本
         const idx = PRINT_LIST.findIndex(i=>i.card.card_id===card.card_id);
         if(idx>=0){
           PRINT_LIST[idx].qty = Math.min(PRINT_LIST[idx].qty + c.qty, 99);
         }else{
           PRINT_LIST.push({card, qty:c.qty});
-          addedKinds++;
         }
-        addedQty += c.qty;
       });
 
       updatePrintBadge();
@@ -2645,6 +2753,44 @@ function renderDeckList(cards){
       setTimeout(()=>{ toPrintBtn.textContent = `🖨️ 將整副牌組加入列印清單（${enriched.reduce((s,c)=>s+c.qty,0)} 張）`; }, 1800);
     });
   }
+
+  // 「更改圖片」按鈕事件（阻止冒泡，避免觸發整行點擊）
+  el.querySelectorAll('.deck-change-img').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.changeidx);
+      openImagePicker(idx);
+    });
+  });
+
+  // 「複製名稱」：複製找不到的卡的日文名（方便加進對照表）
+  el.querySelectorAll('.deck-copy-name').forEach(btn=>{
+    btn.addEventListener('click',async (e)=>{
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.copyidx);
+      const entry = window._deckEnriched?.[idx];
+      if(!entry) return;
+      const name = entry.name || '';
+      try{
+        await navigator.clipboard.writeText(name);
+        const orig = btn.textContent;
+        btn.textContent = '✅ 已複製';
+        setTimeout(()=>{ btn.textContent = orig; }, 1500);
+      }catch(err){
+        // clipboard API 不可用時的退路：用提示框讓使用者手動複製
+        prompt('請手動複製此卡片名稱：', name);
+      }
+    });
+  });
+
+  // 「手動查詢更換」：開搜尋框，用關鍵字找卡片替換
+  el.querySelectorAll('.deck-manual-search').forEach(btn=>{
+    btn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.manualidx);
+      openManualSearch(idx);
+    });
+  });
 
   // 點擊行 → 在抽屜內顯示卡牌詳情
   el.querySelectorAll('.deck-card-row').forEach(row=>{
@@ -2672,6 +2818,115 @@ function renderDeckList(cards){
       showDeckCardDetail(card);
     });
   });
+}
+
+// ── 更改圖片：列出同名的其他版本供挑選 ──
+function openImagePicker(idx){
+  const entry = window._deckEnriched?.[idx];
+  if(!entry || !entry._csv) return;
+
+  const targetName = entry._csv.name;
+  // 找出所有同名卡片（不同版本）
+  const versions = ALL.filter(c=> c.name === targetName);
+  if(versions.length <= 1){
+    alert(`「${targetName}」目前資料庫中只有這一個版本，沒有其他圖樣可換。`);
+    return;
+  }
+
+  const modal = document.getElementById('imgPickerModal');
+  const grid  = document.getElementById('imgPickerGrid');
+  document.getElementById('imgPickerTitle').textContent = `更改「${targetName}」的圖片（${versions.length} 種版本）`;
+
+  grid.innerHTML = versions.map(v=>{
+    const isCur = v.card_id === entry._csv.card_id;
+    const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
+    return `<div class="imgpick-card${isCur?' cur':''}" data-cid="${v.card_id}">
+      ${v.image_url
+        ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+            onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
+        : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
+      <div class="imgpick-set">${esc(setInfo)}</div>
+      ${isCur?'<div class="imgpick-curbadge">目前</div>':''}
+    </div>`;
+  }).join('');
+
+  // 點選版本 → 替換
+  grid.querySelectorAll('.imgpick-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const cid = card.dataset.cid;
+      const chosen = ALL.find(c=>c.card_id===cid);
+      if(chosen){
+        window._deckEnriched[idx]._csv = chosen;
+        window._deckEnriched[idx].card_id = chosen.card_id;
+        window._deckEnriched[idx].sub = (chosen.set_name||'') + (chosen.card_number?' #'+chosen.card_number:'');
+        modal.classList.remove('open');
+        renderDeckListInner(); // 重繪牌組列表
+      }
+    });
+  });
+
+  modal.classList.add('open');
+}
+
+// ── 手動查詢更換：輸入關鍵字找卡片，替換找不到的卡 ──
+function openManualSearch(idx){
+  const entry = window._deckEnriched?.[idx];
+  if(!entry) return;
+
+  const modal = document.getElementById('manualSearchModal');
+  const input = document.getElementById('manualSearchInput');
+  const grid  = document.getElementById('manualSearchGrid');
+
+  document.getElementById('manualSearchTitle').textContent = `手動查詢替換「${entry.name||'此卡'}」`;
+  input.value = '';
+  grid.innerHTML = '<div class="manual-search-hint">輸入卡片名稱關鍵字開始搜尋…</div>';
+
+  // 即時搜尋（每次輸入就過濾）
+  function doManualSearch(){
+    const q = input.value.trim();
+    if(!q){
+      grid.innerHTML = '<div class="manual-search-hint">輸入卡片名稱關鍵字開始搜尋…</div>';
+      return;
+    }
+    // 名稱包含關鍵字的卡，最多顯示 60 張
+    const results = ALL.filter(c=> (c.name||'').includes(q)).slice(0,60);
+    if(!results.length){
+      grid.innerHTML = `<div class="manual-search-hint">找不到包含「${esc(q)}」的卡片</div>`;
+      return;
+    }
+    grid.innerHTML = results.map(v=>{
+      const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
+      return `<div class="imgpick-card" data-cid="${v.card_id}">
+        ${v.image_url
+          ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+              onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
+          : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
+        <div class="imgpick-set">${esc(v.name)}<br>${esc(setInfo)}</div>
+      </div>`;
+    }).join('');
+
+    // 點選 → 替換
+    grid.querySelectorAll('.imgpick-card').forEach(card=>{
+      card.addEventListener('click',()=>{
+        const cid = card.dataset.cid;
+        const chosen = ALL.find(c=>c.card_id===cid);
+        if(chosen){
+          window._deckEnriched[idx]._csv = chosen;
+          window._deckEnriched[idx].card_id = chosen.card_id;
+          window._deckEnriched[idx].name = chosen.name;
+          window._deckEnriched[idx].sub = (chosen.set_name||'') + (chosen.card_number?' #'+chosen.card_number:'');
+          modal.classList.remove('open');
+          renderDeckListInner();
+        }
+      });
+    });
+  }
+
+  // 綁定輸入事件（移除舊的，避免重複綁定）
+  input.oninput = doManualSearch;
+
+  modal.classList.add('open');
+  setTimeout(()=>input.focus(), 100);
 }
 
 function showDeckCardDetail(card){
