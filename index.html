@@ -1274,6 +1274,13 @@ body.mobile .scroll-btns{display:flex}
 // ════════════════════════════════════════════════════════
 const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1Be63ndyhxlqeFXjMlmtfMkr-M9cm-ElxfXDCrJLCTQC-jv6eY3qQJ0rL1MveHzQ_tgXVqC0/pub?output=csv';
 
+// ★ 日中名稱對照表（獨立試算表，發布成 CSV）
+//   欄位：日文名稱 / 中文名稱
+const JP_TW_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5eYIr8M9z6dcm87agH7TUNdp3lh2ywaGtFyXT0SxU232X_wM_IZVCup5BApIyckbsjp-P4UtfdEn/pub?output=csv';
+
+// 從外部試算表載入的對照（會跟程式內建表合併，外部表優先）
+let JP_TW_SHEET_MAP = {};
+
 // ─── STATE ───────────────────────────────────────────────
 let ALL=[], FILTERED=[], SEL=null;
 const ACTIVE_TYPES      = new Set();  // 寶可夢屬性篩選
@@ -1347,12 +1354,37 @@ async function autoLoad(){
       loadCards(cards);
     }, 400);
 
+    // 背景載入日中對照表（不阻塞主畫面，失敗也不影響）
+    loadJpTwSheet();
+
   } catch(e) {
     showError(
       '載入失敗：' + e.message,
       'SHEET_CSV_URL 設定值：',
       SHEET_CSV_URL
     );
+  }
+}
+
+// 載入外部日中對照表（Google Sheets CSV：日文名稱 / 中文名稱）
+async function loadJpTwSheet(){
+  if(!JP_TW_SHEET_URL) return;  // 沒設定就跳過
+  try{
+    const resp = await fetch(JP_TW_SHEET_URL);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const text = await resp.text();
+    const rows = splitCSVRows(text);  // 沿用既有 CSV 切列函式
+    const map = {};
+    rows.forEach((row, i)=>{
+      if(i===0) return;  // 跳過標題列
+      const jp = (row[0]||'').trim();
+      const tw = (row[1]||'').trim();
+      if(jp && tw) map[jp] = tw;
+    });
+    JP_TW_SHEET_MAP = map;
+    console.info('[對照表] 已載入', Object.keys(map).length, '筆日中對照');
+  }catch(e){
+    console.warn('[對照表] 載入失敗（不影響其他功能）:', e.message);
   }
 }
 
@@ -2241,7 +2273,9 @@ const JP_TW_NAMES = {
   'レベルボール':'等級球',
   'クイックボール':'快速球',
   'ヒスイのヘビーボール':'洗翠的沉重球',
+  'ともだちのポフィン':'友好寶芬',
   // 物品
+  'ふうせん':'氣球',
   'なかよしポフィン':'友好寶芬',
   'ふしぎなアメ':'神奇糖果',
   '夜のタンカ':'夜間擔架',
@@ -2254,6 +2288,21 @@ const JP_TW_NAMES = {
   'カウンターキャッチャー':'反擊捕捉器',
   'プライムキャッチャー':'頂級捕捉器',
   'ポケギア3.0':'寶可夢通訊器3.0',
+  'ポケパッド':'寶可平板',
+  'スーパーボール':'超級球',
+  'ピーニャのバックアップ':'碧瑠的支援',
+  'プレシャスキャリー':'寶貝行李箱',
+  '大きなおまもり':'大型護符',
+  'ふつうのつりざお':'普通釣竿',
+  'リカバリーエネルギー':'回復能量',
+  'まけんきハチマキ':'好勝頭帶',
+  '森の封印石':'森林的封印石',
+  'ロストスイーパー':'失落清除器',
+  'すごいきずぐすり':'厲害傷藥',
+  'ネオアッパーエネルギー':'新星強化能量',
+  'スペシャルレッドカード':'特殊紅牌',
+  'ジャミングタワー':'干擾塔',
+  'ロケット団の監視塔':'火箭隊的監視塔',
   // 支援者
   'ナンジャモ':'奇樹',
   '博士の研究':'博士的研究',
@@ -2261,11 +2310,22 @@ const JP_TW_NAMES = {
   'ペパー':'辣椒仔',
   'サワロ':'撒瓦羅',
   'アクロマの執念':'阿克羅瑪的執念',
+  'リーリエの決心':'莉莉艾的決意',
+  'ナタネの覚悟':'娜塔莎的覺悟',
+  'シロナの覇気':'竹蘭的覇氣',
+  'カミツレのsoftlyない':'小菊兒',
+  'ジャッジマン':'裁判',
+  'マツバの確信':'阿松的確信',
+  'クルチの全力':'庫魯奇的全力',
   // 能量（非基本）
   'ジェットエネルギー':'噴射能量',
   'リバーサルエネルギー':'逆轉能量',
   'ルミナスエネルギー':'光輝能量',
   'ミストエネルギー':'迷霧能量',
+  'ダブルターボエネルギー':'雙倍渦輪能量',
+  'レガシーエネルギー':'傳承能量',
+  'ヒート炎エネルギー':'熱火能量',
+  'プリズムエネルギー':'稜鏡能量',
 };
 
 // ── 日本版解析 ───────────────────────────────────────────
@@ -2339,9 +2399,10 @@ async function parseJPDeck(html){
                || candidates[0]
                || null;
       }
-      // 編號配不到 → 用日中名稱對照表（常用卡）
+      // 編號配不到 → 用日中名稱對照表
+      // 優先查外部試算表（你自己維護的），再查程式內建表
       if(!matched){
-        const twName = JP_TW_NAMES[name];
+        const twName = JP_TW_SHEET_MAP[name] || JP_TW_NAMES[name];
         if(twName){
           matched = ALL.find(c=> c.name === twName) || null;
         }
