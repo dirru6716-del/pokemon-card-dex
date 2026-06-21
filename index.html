@@ -782,6 +782,36 @@ body.mobile .scroll-btns{display:flex}
   grid-column:1/-1;text-align:center;color:var(--text3);
   font-size:.85rem;padding:30px 10px;
 }
+/* 待新增對照表 */
+.pending-mappings{
+  margin:0 0 12px;padding:10px 12px;border-radius:10px;
+  background:#1a1530;border:1px solid #5a4a8a;
+}
+.pending-hdr{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:.82rem;font-weight:700;color:#c8b0ff;margin-bottom:8px;
+  font-family:'Zen Kaku Gothic New',sans-serif;
+}
+.pending-copy{
+  padding:5px 10px;border-radius:6px;cursor:pointer;
+  background:#2a2050;border:1px solid #8a6ad0;color:#d8c0ff;
+  font-size:.72rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;
+}
+.pending-copy:hover{background:#352a60}
+.pending-list{display:flex;flex-direction:column;gap:4px}
+.pending-row{
+  display:flex;align-items:center;gap:8px;font-size:.8rem;
+  padding:5px 8px;background:#13102450;border-radius:6px;
+}
+.pending-jp{color:#9ab}
+.pending-arrow{color:#6a7a9a}
+.pending-tw{color:var(--gold);font-weight:700;flex:1}
+.pending-del{
+  background:transparent;border:none;color:#7a6a9a;cursor:pointer;
+  font-size:.85rem;padding:0 4px;
+}
+.pending-del:hover{color:var(--red)}
+.pending-tip{font-size:.68rem;color:var(--text3);margin-top:8px;line-height:1.4}
 .sim-modal.open{display:flex;align-items:center;justify-content:center}
 .sim-backdrop{position:absolute;inset:0;background:rgba(9,13,24,.8);backdrop-filter:blur(4px)}
 .sim-panel{
@@ -1232,6 +1262,8 @@ body.mobile .scroll-btns{display:flex}
         </a>
       </div>
     </div>
+
+    <div class="pending-mappings" id="pendingMappings" style="display:none"></div>
 
     <div class="deck-list" id="deckList">
       <div class="deck-empty">
@@ -2911,12 +2943,19 @@ function openManualSearch(idx){
         const cid = card.dataset.cid;
         const chosen = ALL.find(c=>c.card_id===cid);
         if(chosen){
+          // ★ 記錄對照：原始日文名 → 選定的中文名（替換前先抓原始日文名）
+          const jpName = entry.name || '';
+          if(jpName && jpName !== chosen.name){
+            recordPendingMapping(jpName, chosen.name);
+          }
+
           window._deckEnriched[idx]._csv = chosen;
           window._deckEnriched[idx].card_id = chosen.card_id;
           window._deckEnriched[idx].name = chosen.name;
           window._deckEnriched[idx].sub = (chosen.set_name||'') + (chosen.card_number?' #'+chosen.card_number:'');
           modal.classList.remove('open');
           renderDeckListInner();
+          renderPendingMappings();
         }
       });
     });
@@ -2927,6 +2966,66 @@ function openManualSearch(idx){
 
   modal.classList.add('open');
   setTimeout(()=>input.focus(), 100);
+}
+
+// ── 待新增對照表（手動替換時累積，供一鍵複製到 Google Sheets）──
+const PENDING_MAPPINGS = []; // [{jp, tw}]
+
+function recordPendingMapping(jp, tw){
+  // 避免重複
+  if(PENDING_MAPPINGS.some(m=>m.jp===jp)) return;
+  // 若對照表已經有了也不用再加
+  if(JP_TW_SHEET_MAP[jp] || JP_TW_NAMES[jp]) return;
+  PENDING_MAPPINGS.push({jp, tw});
+}
+
+function renderPendingMappings(){
+  const box = document.getElementById('pendingMappings');
+  if(!box) return;
+  if(!PENDING_MAPPINGS.length){
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  const rows = PENDING_MAPPINGS.map((m,i)=>
+    `<div class="pending-row">
+      <span class="pending-jp">${esc(m.jp)}</span>
+      <span class="pending-arrow">→</span>
+      <span class="pending-tw">${esc(m.tw)}</span>
+      <button class="pending-del" data-pidx="${i}">✕</button>
+    </div>`
+  ).join('');
+  box.innerHTML = `
+    <div class="pending-hdr">
+      📝 待新增對照（${PENDING_MAPPINGS.length}）
+      <button class="pending-copy" id="pendingCopyBtn">📋 一鍵複製全部</button>
+    </div>
+    <div class="pending-list">${rows}</div>
+    <div class="pending-tip">複製後貼到你的 Google Sheets 對照表（會自動分成日文/中文兩欄）</div>
+  `;
+
+  // 複製按鈕：用 Tab 分隔，貼到試算表會自動分欄
+  document.getElementById('pendingCopyBtn').addEventListener('click', async ()=>{
+    const text = PENDING_MAPPINGS.map(m=>`${m.jp}\t${m.tw}`).join('\n');
+    const btn = document.getElementById('pendingCopyBtn');
+    try{
+      await navigator.clipboard.writeText(text);
+      const orig = btn.textContent;
+      btn.textContent = '✅ 已複製';
+      setTimeout(()=>{ btn.textContent = orig; }, 1500);
+    }catch(e){
+      prompt('請手動複製以下內容，貼到 Google Sheets：', text);
+    }
+  });
+
+  // 刪除單列
+  box.querySelectorAll('.pending-del').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const i = parseInt(b.dataset.pidx);
+      PENDING_MAPPINGS.splice(i,1);
+      renderPendingMappings();
+    });
+  });
 }
 
 function showDeckCardDetail(card){
