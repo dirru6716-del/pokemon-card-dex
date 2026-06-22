@@ -662,6 +662,12 @@ body.mobile .scroll-btns{display:flex}
 }
 .print-item-sub{font-size:.68rem;color:var(--text3);margin-top:2px}
 .print-item-ctrl{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.print-change-img{
+  margin-top:4px;padding:3px 8px;border-radius:6px;cursor:pointer;
+  background:#13243c;border:1px solid #2a5a8a;color:#7ab8ff;
+  font-size:.66rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;transition:all .15s;
+}
+.print-change-img:hover{background:#1a3050;border-color:#4a8ad0}
 .pqty-btn{
   width:24px;height:24px;border-radius:5px;
   background:var(--surface2);border:1px solid var(--border2);
@@ -3329,6 +3335,7 @@ function renderPrintList(){
         <div class="print-item-info">
           <div class="print-item-name">${esc(c.name||'—')}</div>
           <div class="print-item-sub">${esc(c.set_name||'')}${c.card_number?' #'+esc(c.card_number):''}</div>
+          <button class="print-change-img" onclick="openPrintImagePicker(${idx})">🔄 更改圖片</button>
         </div>
         <div class="print-item-ctrl">
           <button class="pqty-btn" onclick="changePrintQty(${idx},-1)">－</button>
@@ -3356,6 +3363,59 @@ function removePrintItem(idx){
   PRINT_LIST.splice(idx, 1);
   updatePrintBadge();
   renderPrintList();
+}
+
+// ── 列印清單「更改圖片」：列出同名其他版本供挑選 ──
+function openPrintImagePicker(idx){
+  const item = PRINT_LIST[idx];
+  if(!item || !item.card) return;
+
+  const targetName = item.card.name;
+  const versions = ALL.filter(c=> c.name === targetName);
+  if(versions.length <= 1){
+    alert(`「${targetName}」目前資料庫中只有這一個版本，沒有其他圖樣可換。`);
+    return;
+  }
+
+  const modal = document.getElementById('imgPickerModal');
+  const grid  = document.getElementById('imgPickerGrid');
+  document.getElementById('imgPickerTitle').textContent = `更改「${targetName}」的圖片（${versions.length} 種版本）`;
+
+  grid.innerHTML = versions.map(v=>{
+    const isCur = v.card_id === item.card.card_id;
+    const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
+    return `<div class="imgpick-card${isCur?' cur':''}" data-cid="${v.card_id}">
+      ${v.image_url
+        ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+            onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
+        : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
+      <div class="imgpick-set">${esc(setInfo)}</div>
+      ${isCur?'<div class="imgpick-curbadge">目前</div>':''}
+    </div>`;
+  }).join('');
+
+  // 點選版本 → 替換清單中的這張卡
+  grid.querySelectorAll('.imgpick-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const cid = card.dataset.cid;
+      const chosen = ALL.find(c=>c.card_id===cid);
+      if(chosen){
+        // 若清單裡已有相同 card_id 的卡，合併數量；否則直接替換
+        const dupIdx = PRINT_LIST.findIndex((it,i)=> i!==idx && it.card.card_id===chosen.card_id);
+        if(dupIdx>=0){
+          PRINT_LIST[dupIdx].qty = Math.min(PRINT_LIST[dupIdx].qty + PRINT_LIST[idx].qty, 20);
+          PRINT_LIST.splice(idx,1);
+        }else{
+          PRINT_LIST[idx].card = chosen;
+        }
+        modal.classList.remove('open');
+        updatePrintBadge();
+        renderPrintList();
+      }
+    });
+  });
+
+  modal.classList.add('open');
 }
 
 // 開啟 / 關閉列印抽屜
