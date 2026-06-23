@@ -1312,6 +1312,7 @@ body.mobile .scroll-btns{display:flex}
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
       <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
+      <button class="btn-print-pdf" id="doSmallPrintBtn" style="background:linear-gradient(135deg,#2a5a3a,#1a3a28);border-color:#4a9a6a;color:#a0e0c0">🖼️ 小圖片列印（僅插畫）</button>
       <button class="btn-deck-test" id="deckTestBtn">🎲 開始測試牌組</button>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn-deck-save" id="deckSaveBtn">💾 儲存牌庫</button>
@@ -3723,6 +3724,11 @@ document.getElementById('doPrintBtn').addEventListener('click', ()=>{
   exportPDF(PRINT_LIST, document.getElementById('doPrintBtn'));
 });
 
+document.getElementById('doSmallPrintBtn').addEventListener('click', ()=>{
+  if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
+  exportSmallPDF(PRINT_LIST, document.getElementById('doSmallPrintBtn'));
+});
+
 // 共用 PDF 輸出：items = [{card, qty}]，btn = 顯示進度的按鈕
 async function exportPDF(items, btn){
   const originalText = btn.textContent;
@@ -3817,6 +3823,153 @@ async function exportPDF(items, btn){
     btn.textContent=originalText;
     btn.disabled=false;
   }
+}
+
+// ── 小圖片列印：只取插畫區，固定尺寸排版 ──
+// 插畫裁切比例（相對整張卡，0~1）。寶可夢基礎卡的插畫大約落在這範圍
+// 之後若裁不準可調整這四個數值
+const ART_CROP = { left:0.060, right:0.940, top:0.110, bottom:0.480 };
+// 每張小插圖尺寸（mm）
+const SMALL_W = 55, SMALL_H = 40;
+
+async function exportSmallPDF(items, btn){
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 預載圖片中...';
+
+  const preOpenedTab = window.open('', '_blank');
+  if(preOpenedTab){
+    preOpenedTab.document.write('<title>產生小圖列印中…</title><body style="background:#0d1320;color:#9ab;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p>⏳ 小圖片 PDF 產生中，請稍候…</p></body>');
+  }
+
+  // 依分類排序
+  const SEC_RANK = {'寶可夢':0,'訓練家':1,'能量':2,'其他':3};
+  const sorted = [...items].sort((a,b)=>{
+    const ra = SEC_RANK[SECTION_LABEL[a.card.card_type]] ?? 3;
+    const rb = SEC_RANK[SECTION_LABEL[b.card.card_type]] ?? 3;
+    return ra - rb;
+  });
+  const expanded = [];
+  sorted.forEach(item=>{ for(let i=0;i<item.qty;i++) expanded.push(item.card); });
+
+  try {
+    if(!window.jspdf){
+      await new Promise((res,rej)=>{
+        const s=document.createElement('script');
+        s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload=res; s.onerror=rej;
+        document.head.appendChild(s);
+      });
+    }
+    const { jsPDF } = window.jspdf;
+
+    // 預載完整卡圖
+    const imgMap = await preloadAllImages(expanded, (n,t)=>{
+      btn.textContent=`⏳ 預載 ${n}/${t}...`;
+    });
+
+    btn.textContent = '⏳ 裁切排版中...';
+
+    const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
+
+    // 計算一頁能排幾欄幾列（含 margin）
+    const MARGIN = 8;          // 紙張邊距
+    const usableW = 210 - MARGIN*2;
+    const usableH = 297 - MARGIN*2;
+    const cols = Math.floor(usableW / SMALL_W);
+    const rows = Math.floor(usableH / SMALL_H);
+    const perPage = cols * rows;
+    // 置中起始點
+    const startX = (210 - cols*SMALL_W)/2;
+    const startY = (297 - rows*SMALL_H)/2;
+
+    let onPage = 0;
+
+    for(let i=0;i<expanded.length;i++){
+      if(onPage===perPage){
+        drawSmallCutLines(pdf, startX, startY, cols, rows);
+        pdf.addPage();
+        onPage=0;
+      }
+      const card = expanded[i];
+      const fullImg = imgMap[card.image_url];
+      // 裁切插畫區（非同步）
+      const artImg = fullImg ? await cropArtwork(fullImg) : blankCard(card.name);
+
+      const col = onPage % cols;
+      const row = Math.floor(onPage / cols);
+      const x = startX + col*SMALL_W;
+      const y = startY + row*SMALL_H;
+
+      pdf.addImage(artImg, 'JPEG', x, y, SMALL_W, SMALL_H, undefined, 'FAST');
+      onPage++;
+    }
+    drawSmallCutLines(pdf, startX, startY, cols, rows);
+
+    const pdfBlob = pdf.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    if(preOpenedTab && !preOpenedTab.closed){
+      preOpenedTab.location.href = blobUrl;
+    }else{
+      const a = document.createElement('a');
+      a.href = blobUrl; a.download = `pokemon_小圖_${expanded.length}張.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      alert('瀏覽器擋下了新分頁開啟，已改用下載方式。');
+    }
+    setTimeout(()=>URL.revokeObjectURL(blobUrl), 60000);
+
+    btn.textContent='✅ 已在新分頁開啟！';
+    setTimeout(()=>{ btn.textContent=originalText; btn.disabled=false; },2000);
+
+  } catch(err){
+    if(preOpenedTab && !preOpenedTab.closed) preOpenedTab.close();
+    alert('小圖 PDF 產生失敗：'+err.message);
+    btn.textContent=originalText;
+    btn.disabled=false;
+  }
+}
+
+// 把完整卡圖（base64）裁切成只剩插畫區，回傳裁好的 base64（非同步）
+function cropArtwork(base64){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      try{
+        const iw = img.naturalWidth, ih = img.naturalHeight;
+        const sx = iw * ART_CROP.left;
+        const sy = ih * ART_CROP.top;
+        const sw = iw * (ART_CROP.right - ART_CROP.left);
+        const sh = ih * (ART_CROP.bottom - ART_CROP.top);
+        const canvas = document.createElement('canvas');
+        canvas.width = sw; canvas.height = sh;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0,0,sw,sh);
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      }catch(e){
+        resolve(base64); // 裁切失敗就用原圖
+      }
+    };
+    img.onerror = ()=> resolve(base64);
+    img.src = base64;
+  });
+}
+
+// 小圖裁切線（格線）
+function drawSmallCutLines(pdf, startX, startY, cols, rows){
+  pdf.setDrawColor(180,180,180);
+  pdf.setLineWidth(0.1);
+  pdf.setLineDash([1.2,1.2]);
+  for(let c=0;c<=cols;c++){
+    const x=startX+c*SMALL_W;
+    pdf.line(x, startY, x, startY+rows*SMALL_H);
+  }
+  for(let r=0;r<=rows;r++){
+    const y=startY+r*SMALL_H;
+    pdf.line(startX, y, startX+cols*SMALL_W, y);
+  }
+  pdf.setLineDash([]);
 }
 
 // 裁切輔助線：邊緣實線對刀 + 卡片之間虛線分隔
