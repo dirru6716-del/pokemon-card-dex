@@ -1409,6 +1409,7 @@ const JP_TW_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5eYI
 
 // 從外部試算表載入的對照（會跟程式內建表合併，外部表優先）
 let JP_TW_SHEET_MAP = {};
+let JP_TW_SHEET_PRECISE = {};
 
 // ─── STATE ───────────────────────────────────────────────
 let ALL=[], FILTERED=[], SEL=null;
@@ -1502,16 +1503,25 @@ async function loadJpTwSheet(){
     const resp = await fetch(JP_TW_SHEET_URL);
     if(!resp.ok) throw new Error('HTTP '+resp.status);
     const text = await resp.text();
-    const rows = splitCSVRows(text);  // 沿用既有 CSV 切列函式
-    const map = {};
+    const rows = splitCSVRows(text);
+    // 四欄格式：日文名 / 日本卡號 / 中文名 / 中文卡號
+    const map = {};        // 退而求其次：日文名 → {tw, twNum}
+    const preciseMap = {}; // 精準：「日文名|日本卡號」→ {tw, twNum}
     rows.forEach((row, i)=>{
       if(i===0) return;  // 跳過標題列
-      const jp = (row[0]||'').trim();
-      const tw = (row[1]||'').trim();
-      if(jp && tw) map[jp] = tw;
+      const jp    = (row[0]||'').trim();
+      const jpNum = (row[1]||'').trim();
+      const tw    = (row[2]||'').trim();
+      const twNum = (row[3]||'').trim();
+      if(!jp || !tw) return;
+      const val = { tw, twNum };
+      if(jpNum) preciseMap[jp + '|' + jpNum] = val;
+      // 名稱索引：若同名多筆，保留第一筆（精準索引才負責區分版本）
+      if(!map[jp]) map[jp] = val;
     });
     JP_TW_SHEET_MAP = map;
-    console.info('[對照表] 已載入', Object.keys(map).length, '筆日中對照');
+    JP_TW_SHEET_PRECISE = preciseMap;
+    console.info('[對照表] 已載入', Object.keys(map).length, '筆日中對照（精準', Object.keys(preciseMap).length, '筆）');
   }catch(e){
     console.warn('[對照表] 載入失敗（不影響其他功能）:', e.message);
   }
@@ -2524,20 +2534,36 @@ async function parseJPDeck(html){
 
       if(!name || !qty || SKIP.has(name)) return;
 
-      // ★ 比對 CSV：編號非空才比對；優先分類相符，否則退回第一個候選
+      // ★★ 第一優先：對照表「日文名+日本卡號」精準對照（解決日台撞號問題）
       let matched = null;
-      if(num){
+      const preciseHit = JP_TW_SHEET_PRECISE[name + '|' + num];
+      if(preciseHit){
+        // 用中文名 + 中文卡號精準找到 CSV 那一張
+        if(preciseHit.twNum){
+          matched = ALL.find(c=> c.name===preciseHit.tw && c.card_number===preciseHit.twNum) || null;
+        }
+        if(!matched){
+          matched = ALL.find(c=> c.name===preciseHit.tw) || null;
+        }
+      }
+
+      // 第二：編號比對（編號非空才比對；優先分類相符，否則退回第一個候選）
+      if(!matched && num){
         const candidates = ALL.filter(c=> c.card_number === num);
         matched = candidates.find(c=> curSection && csvSection(c) === curSection)
                || candidates[0]
                || null;
       }
-      // 編號配不到 → 用日中名稱對照表
-      // 優先查外部試算表（你自己維護的），再查程式內建表
+      // 第三：日中名稱對照表（外部試算表 → 程式內建表）
       if(!matched){
-        const twName = JP_TW_SHEET_MAP[name] || JP_TW_NAMES[name];
+        const hit = JP_TW_SHEET_MAP[name];
+        const twName = (hit && hit.tw) || JP_TW_NAMES[name];
+        const twNum  = hit && hit.twNum;
         if(twName){
-          matched = ALL.find(c=> c.name === twName) || null;
+          if(twNum){
+            matched = ALL.find(c=> c.name===twName && c.card_number===twNum) || null;
+          }
+          if(!matched) matched = ALL.find(c=> c.name === twName) || null;
         }
       }
       // 基本能量通常沒編號 → 用名稱對照表
@@ -2555,6 +2581,8 @@ async function parseJPDeck(html){
       const entry = {
         card_id: matched?.card_id || '',
         name:    matched?.name || name,
+        _jpName: name,  // ★ 永遠保留原始日文名（供手動更換時記錄對照用）
+        _jpNum: num,    // ★ 保留原始日本卡號（四欄對照表用）
         qty,
         sub:     matched
           ? (matched.set_name||'') + (matched.card_number ? ' #'+matched.card_number : '')
@@ -2739,7 +2767,10 @@ function renderDeckListInner(){
             <div class="deck-card-name">${esc(nameShow)}</div>
             <div class="deck-card-sub">${esc(sub)}</div>
             ${canChange
-              ? `<button class="deck-change-img" data-changeidx="${c._idx}">🔄 更改圖片</button>`
+              ? `<div class="deck-unmatched-btns">
+                   <button class="deck-change-img" data-changeidx="${c._idx}">🔄 更改圖片</button>
+                   <button class="deck-manual-search" data-manualidx="${c._idx}">🔍 手動查詢更換</button>
+                 </div>`
               : `<div class="deck-unmatched-btns">
                    <button class="deck-copy-name" data-copyidx="${c._idx}">📋 複製名稱</button>
                    <button class="deck-manual-search" data-manualidx="${c._idx}">🔍 手動查詢更換</button>
@@ -2952,10 +2983,11 @@ function openManualSearch(idx){
         const cid = card.dataset.cid;
         const chosen = ALL.find(c=>c.card_id===cid);
         if(chosen){
-          // ★ 記錄對照：原始日文名 → 選定的中文名（替換前先抓原始日文名）
-          const jpName = entry.name || '';
+          // ★ 記錄四欄對照：日文名 / 日本卡號 / 中文名 / 中文卡號
+          const jpName = entry._jpName || entry.name || '';
+          const jpNum  = entry._jpNum || '';
           if(jpName && jpName !== chosen.name){
-            recordPendingMapping(jpName, chosen.name);
+            recordPendingMapping(jpName, jpNum, chosen.name, chosen.card_number||'');
           }
 
           window._deckEnriched[idx]._csv = chosen;
@@ -2978,14 +3010,15 @@ function openManualSearch(idx){
 }
 
 // ── 待新增對照表（手動替換時累積，供一鍵複製到 Google Sheets）──
-const PENDING_MAPPINGS = []; // [{jp, tw}]
+const PENDING_MAPPINGS = []; // [{jp, jpNum, tw, twNum}]
 
-function recordPendingMapping(jp, tw){
-  // 避免重複
-  if(PENDING_MAPPINGS.some(m=>m.jp===jp)) return;
-  // 若對照表已經有了也不用再加
-  if(JP_TW_SHEET_MAP[jp] || JP_TW_NAMES[jp]) return;
-  PENDING_MAPPINGS.push({jp, tw});
+function recordPendingMapping(jp, jpNum, tw, twNum){
+  // 避免重複（用 日文名+日本卡號 當識別）
+  const key = jp + '|' + (jpNum||'');
+  if(PENDING_MAPPINGS.some(m=> (m.jp+'|'+(m.jpNum||''))===key)) return;
+  // 若精準對照表已經有了就不用再加
+  if(jpNum && JP_TW_SHEET_PRECISE[jp+'|'+jpNum]) return;
+  PENDING_MAPPINGS.push({jp, jpNum:jpNum||'', tw, twNum:twNum||''});
 }
 
 function renderPendingMappings(){
@@ -2998,9 +3031,9 @@ function renderPendingMappings(){
   box.style.display = 'block';
   const rows = PENDING_MAPPINGS.map((m,i)=>
     `<div class="pending-row">
-      <span class="pending-jp">${esc(m.jp)}</span>
+      <span class="pending-jp">${esc(m.jp)}${m.jpNum?' <small style="color:#6a7a9a">'+esc(m.jpNum)+'</small>':''}</span>
       <span class="pending-arrow">→</span>
-      <span class="pending-tw">${esc(m.tw)}</span>
+      <span class="pending-tw">${esc(m.tw)}${m.twNum?' <small style="color:#9a8a4a">'+esc(m.twNum)+'</small>':''}</span>
       <button class="pending-del" data-pidx="${i}">✕</button>
     </div>`
   ).join('');
@@ -3010,12 +3043,12 @@ function renderPendingMappings(){
       <button class="pending-copy" id="pendingCopyBtn">📋 一鍵複製全部</button>
     </div>
     <div class="pending-list">${rows}</div>
-    <div class="pending-tip">複製後貼到你的 Google Sheets 對照表（會自動分成日文/中文兩欄）</div>
+    <div class="pending-tip">複製後貼到你的 Google Sheets 對照表（會自動分成 日文名/日本卡號/中文名/中文卡號 四欄）</div>
   `;
 
-  // 複製按鈕：用 Tab 分隔，貼到試算表會自動分欄
+  // 複製按鈕：四欄用 Tab 分隔，貼到試算表會自動分欄
   document.getElementById('pendingCopyBtn').addEventListener('click', async ()=>{
-    const text = PENDING_MAPPINGS.map(m=>`${m.jp}\t${m.tw}`).join('\n');
+    const text = PENDING_MAPPINGS.map(m=>`${m.jp}\t${m.jpNum}\t${m.tw}\t${m.twNum}`).join('\n');
     const btn = document.getElementById('pendingCopyBtn');
     try{
       await navigator.clipboard.writeText(text);
