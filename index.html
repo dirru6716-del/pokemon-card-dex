@@ -756,8 +756,8 @@ body.mobile .scroll-btns{display:flex}
 }
 .imgpick-card:hover{border-color:var(--gold)}
 .imgpick-card.cur{border-color:#4a8ad0}
-/* ★ height:auto 讓圖片依原始比例完整顯示（橫式/直式都不裁切）*/
-.imgpick-card img{width:100%;height:auto;display:block}
+/* ★ 圖片依原始比例完整顯示（橫式/直式都不裁切）；min-height 避免未載入時塌成一條 */
+.imgpick-card img{width:100%;height:auto;min-height:60px;object-fit:contain;display:block;background:#0d1320}
 .imgpick-noimg{width:100%;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#7888b8;text-align:center;padding:8px}
 .imgpick-set{font-size:.62rem;color:var(--text3);padding:5px 6px;text-align:center;line-height:1.3;border-top:1px solid var(--border)}
 .imgpick-curbadge{
@@ -1313,6 +1313,7 @@ body.mobile .scroll-btns{display:flex}
       </div>
       <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
       <button class="btn-print-pdf" id="doSmallPrintBtn" style="background:linear-gradient(135deg,#2a5a3a,#1a3a28);border-color:#4a9a6a;color:#a0e0c0">🖼️ 小圖片列印（僅插畫）</button>
+      <button class="btn-print-pdf" id="doExportCodeBtn" style="background:linear-gradient(135deg,#4a3a6a,#2a1a4a);border-color:#8a6ad0;color:#c8b0ff">📤 匯出為官網代碼</button>
       <button class="btn-deck-test" id="deckTestBtn">🎲 開始測試牌組</button>
       <div style="display:flex;gap:8px;margin-top:8px">
         <button class="btn-deck-save" id="deckSaveBtn">💾 儲存牌庫</button>
@@ -1349,6 +1350,26 @@ body.mobile .scroll-btns{display:flex}
         placeholder="輸入卡片名稱關鍵字，例如：土龍弟弟">
     </div>
     <div class="imgpick-grid" id="manualSearchGrid"></div>
+  </div>
+</div>
+
+<!-- 📤 匯出官網代碼結果 Modal -->
+<div class="imgpick-modal" id="exportCodeModal">
+  <div class="imgpick-backdrop" id="exportCodeBackdrop"></div>
+  <div class="imgpick-panel" style="height:auto;max-height:none">
+    <div class="imgpick-hdr">
+      <span>📤 官網牌組代碼</span>
+      <button class="imgpick-close" id="exportCodeClose">✕</button>
+    </div>
+    <div style="padding:24px 18px;text-align:center">
+      <div id="exportCodeValue" style="font-size:1.4rem;font-weight:700;color:var(--gold);font-family:'Orbitron',monospace;letter-spacing:1px;word-break:break-all;margin-bottom:10px">—</div>
+      <div id="exportCodeInfo" style="font-size:.85rem;color:var(--text3);margin-bottom:18px">—</div>
+      <button id="exportCodeCopyBtn" class="btn-print-pdf" style="display:inline-block;width:auto;padding:10px 24px">📋 複製代碼</button>
+      <div style="font-size:.72rem;color:var(--text3);margin-top:16px;line-height:1.5">
+        此代碼可直接在台灣官網「牌組構築工具」讀取。<br>
+        代碼由第三方服務產生，每次匯出都是新的代碼。
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2914,7 +2935,7 @@ function openImagePicker(idx){
     const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
     return `<div class="imgpick-card${isCur?' cur':''}" data-cid="${v.card_id}">
       ${v.image_url
-        ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+        ? `<img src="${v.image_url}" alt="${esc(v.name)}"
             onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
         : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
       <div class="imgpick-set">${esc(setInfo)}</div>
@@ -2970,7 +2991,7 @@ function openManualSearch(idx){
       const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
       return `<div class="imgpick-card" data-cid="${v.card_id}">
         ${v.image_url
-          ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+          ? `<img src="${v.image_url}" alt="${esc(v.name)}"
               onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
           : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
         <div class="imgpick-set">${esc(v.name)}<br>${esc(setInfo)}</div>
@@ -3422,7 +3443,7 @@ function openPrintImagePicker(idx){
     const setInfo = (v.set_name||'') + (v.card_number?' #'+v.card_number:'');
     return `<div class="imgpick-card${isCur?' cur':''}" data-cid="${v.card_id}">
       ${v.image_url
-        ? `<img src="${v.image_url}" alt="${esc(v.name)}" loading="lazy"
+        ? `<img src="${v.image_url}" alt="${esc(v.name)}"
             onerror="this.src='https://wsrv.nl/?url='+encodeURIComponent('${v.image_url}')+'&w=150&output=jpg'">`
         : `<div class="imgpick-noimg">${esc(v.name)}</div>`}
       <div class="imgpick-set">${esc(setInfo)}</div>
@@ -3761,6 +3782,102 @@ document.getElementById('doSmallPrintBtn').addEventListener('click', ()=>{
   if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
   exportSmallPDF(PRINT_LIST, document.getElementById('doSmallPrintBtn'));
 });
+
+// ── 匯出為台灣官網牌組代碼 ──
+// 透過第三方服務 ptcg-tw-sim.com 的 API，把卡片清單編碼成官網可讀的三段代碼。
+// 注意：這是第三方私有 API，非官方公開介面，對方若改動或關閉此功能即失效。
+const TW_ENCODE_API = 'https://www.ptcg-tw-sim.com/api/encode-tw-deck';
+
+document.getElementById('doExportCodeBtn').addEventListener('click', exportToOfficialCode);
+
+document.getElementById('exportCodeClose')?.addEventListener('click',()=>document.getElementById('exportCodeModal').classList.remove('open'));
+document.getElementById('exportCodeBackdrop')?.addEventListener('click',()=>document.getElementById('exportCodeModal').classList.remove('open'));
+document.getElementById('exportCodeCopyBtn')?.addEventListener('click', async ()=>{
+  const code = document.getElementById('exportCodeValue').textContent;
+  const btn = document.getElementById('exportCodeCopyBtn');
+  try{
+    await navigator.clipboard.writeText(code);
+    const o = btn.textContent; btn.textContent = '✅ 已複製';
+    setTimeout(()=>{ btn.textContent = o; }, 1500);
+  }catch(e){
+    prompt('請手動複製代碼：', code);
+  }
+});
+
+async function exportToOfficialCode(){
+  const btn = document.getElementById('doExportCodeBtn');
+  if(btn.disabled) return;
+  if(!PRINT_LIST.length){ alert('列印清單是空的，請先加入卡片。'); return; }
+
+  const total = PRINT_LIST.reduce((s,it)=> s + it.qty, 0);
+
+  // 整理成 API 需要的格式
+  const entries = PRINT_LIST.map(it=>({
+    cardId: it.card.card_id,
+    cardName: it.card.name,
+    count: it.qty,
+  }));
+
+  // 確認彈窗（牌組會被永久發行到官網）
+  const msg = total < 60
+    ? `牌組目前 ${total} 張（未滿 60 張）。\n\n按確定後會把此牌組發行到台灣官網並取得代碼，確定繼續嗎？`
+    : `按確定後會把此牌組（${total} 張）發行到台灣官網（每次匯出都會產生新代碼），確定繼續嗎？`;
+  if(!window.confirm(msg)) return;
+
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ 產生代碼中…';
+
+  try{
+    const resp = await fetch(TW_ENCODE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entries }),
+    });
+
+    if(!resp.ok){
+      let errMsg = resp.statusText;
+      try{ const j = await resp.json(); errMsg = j.error || errMsg; }catch(e){}
+      throw new Error(errMsg);
+    }
+
+    const data = await resp.json();
+    const code = data.deckCode || '';
+    if(!code) throw new Error('伺服器未回傳代碼');
+
+    // 嘗試自動複製
+    let copied = false;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        await navigator.clipboard.writeText(code);
+        copied = true;
+      }
+    }catch(e){}
+
+    showExportCodeResult(code, data.totalKinds||PRINT_LIST.length, data.totalCards||total, copied);
+
+    btn.textContent = '✅ 已產生代碼！';
+    setTimeout(()=>{ btn.textContent = originalText; btn.disabled = false; }, 2000);
+
+  }catch(err){
+    btn.textContent = originalText;
+    btn.disabled = false;
+    // CORS 或網路錯誤會是 TypeError: Failed to fetch
+    if(err instanceof TypeError){
+      alert('匯出失敗：無法連線到代碼產生服務。\n\n可能原因：\n• 該第三方服務暫時關閉或變更\n• 瀏覽器的跨網域限制（CORS）\n\n這個功能依賴外部服務（ptcg-tw-sim.com），不在本站控制範圍內。');
+    }else{
+      alert('匯出失敗：' + err.message);
+    }
+  }
+}
+
+// 顯示匯出結果
+function showExportCodeResult(code, kinds, cards, copied){
+  const modal = document.getElementById('exportCodeModal');
+  document.getElementById('exportCodeValue').textContent = code;
+  document.getElementById('exportCodeInfo').textContent = `共 ${kinds} 種卡牌 / ${cards} 張` + (copied ? '　✅ 已自動複製' : '');
+  modal.classList.add('open');
+}
 
 // 共用 PDF 輸出：items = [{card, qty}]，btn = 顯示進度的按鈕
 async function exportPDF(items, btn){
