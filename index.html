@@ -749,15 +749,17 @@ body.mobile .scroll-btns{display:flex}
   flex:1;overflow-y:auto;padding:14px;
   display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;
   align-content:start;
+  align-items:start;          /* ★ 不縱向拉伸卡片，避免圖片變形 */
+  grid-auto-rows:max-content;  /* ★ 每列高度由內容（圖片）決定 */
 }
 .imgpick-card{
-  position:relative;border-radius:8px;overflow:hidden;cursor:pointer;
-  background:var(--bg2);border:2px solid transparent;transition:all .15s;
+  position:relative;border-radius:8px;cursor:pointer;
+  background:var(--bg2);border:2px solid transparent;transition:border-color .15s;
 }
 .imgpick-card:hover{border-color:var(--gold)}
 .imgpick-card.cur{border-color:#4a8ad0}
-/* ★ 圖片完全依原始比例展開，不限制高度、不裁切（橫式直式都顯示完整卡面） */
-.imgpick-card img{width:100%;height:auto;display:block;background:#0d1320}
+/* ★ 圖片完全依原始比例展開，不限制高度、不裁切。圓角靠 card 的 border-radius */
+.imgpick-card img{width:100%;height:auto;display:block;border-radius:6px;background:#0d1320}
 .imgpick-noimg{width:100%;min-height:90px;display:flex;align-items:center;justify-content:center;font-size:.7rem;color:#7888b8;text-align:center;padding:8px}
 .imgpick-set{font-size:.62rem;color:var(--text3);padding:5px 6px;text-align:center;line-height:1.3;border-top:1px solid var(--border)}
 .imgpick-curbadge{
