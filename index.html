@@ -2395,7 +2395,7 @@ async function fetchDeck(){
       ? parseTWDeck(html)
       : await parseJPDeck(html);
 
-    if(!cards.length) throw new Error('找不到卡牌資料，請確認代碼是否正確');
+    if(!cards.length) throw new Error('抓到頁面但解析不到卡牌（可能官網結構已改變，詳見 Console）');
 
     const total = cards.reduce((s,c)=>s+c.qty,0);
     const tcgdexCount = cards.filter(c=>c._fromTcgdex).length;
@@ -2432,17 +2432,42 @@ function setDeckStatus(msg, cls){
 //   <li>卡牌名 擴充包 編號 張數</li>
 function parseTWDeck(html){
   const doc = new DOMParser().parseFromString(html,'text/html');
+
+  // ── 方式1：嚴格結構（h3 分類標題 + ul/li）──
+  const strict = parseTWStrict(doc);
+  if(strict.length){
+    console.info('[台灣牌組] 用嚴格結構解析成功，', strict.length, '種卡');
+    return strict;
+  }
+
+  // ── 方式2：寬鬆掃描（官網改版時的後備）──
+  const loose = parseTWLoose(doc);
+  if(loose.length){
+    console.info('[台灣牌組] 嚴格結構失敗，改用寬鬆掃描，', loose.length, '種卡');
+    return loose;
+  }
+
+  // 兩種都失敗 → 印出診斷資訊
+  const allLinks = doc.querySelectorAll('a[href*="card-search/detail"]').length;
+  const h3Count  = doc.querySelectorAll('h3').length;
+  console.warn('[台灣牌組] 解析失敗。頁面統計：卡片連結', allLinks, '個、h3 標題', h3Count, '個、HTML 長度', html.length);
+  if(allLinks === 0){
+    console.warn('[台灣牌組] 頁面完全沒有卡片連結 → 可能是 JS 動態載入，抓 HTML 無效');
+  }
+  return [];
+}
+
+// 嚴格結構：<h3>寶可夢卡(17)</h3><ul><li><a href="...detail/123/">
+function parseTWStrict(doc){
   const cards = [];
   const seenSections = new Set();
 
   doc.body.querySelectorAll('h3').forEach(h3=>{
     const title = h3.textContent.trim();
-    // 只處理分類標題，例如「寶可夢卡(20)」「物品卡(14)」
     const sectionMatch = title.match(/^(.+?)[（(]\d+[)）]/);
     if(!sectionMatch) return;
     const curSection = sectionMatch[1].trim();
 
-    // ★ 第二次遇到同分類 → 下半段，停止
     if(seenSections.has(curSection)) return;
     seenSections.add(curSection);
 
@@ -2452,22 +2477,57 @@ function parseTWDeck(html){
     ul.querySelectorAll('li').forEach(li=>{
       const a = li.querySelector('a[href*="/card-search/detail/"]');
       if(!a) return;
-
-      // card_id from href
-      const m = a.href.match(/\/card-search\/detail\/(\d+)\/?/);
+      const m = (a.getAttribute('href')||'').match(/\/card-search\/detail\/(\d+)\/?/);
       if(!m) return;
-      const card_id = m[1];
-
-      // ★ 張數：a 標籤內的純文字（img 沒有文字，只有最後的數字）
-      // a.textContent 範例："\n  \n  2" → 取最後的整數
-      const aText = a.textContent.trim();
-      const qty   = parseInt(aText.match(/(\d+)\s*$/)?.[1] || '1');
-
-      cards.push({ card_id, qty, section: curSection });
+      const qty = parseInt(a.textContent.trim().match(/(\d+)\s*$/)?.[1] || '1');
+      cards.push({ card_id:m[1], qty, section:curSection });
     });
   });
-
   return cards;
+}
+
+// 寬鬆掃描：直接找所有卡片連結，用最近的標題判斷分類
+function parseTWLoose(doc){
+  const map = new Map(); // card_id → {card_id, qty, section}
+
+  doc.querySelectorAll('a[href*="card-search/detail"]').forEach(a=>{
+    const href = a.getAttribute('href') || '';
+    const m = href.match(/card-search\/detail\/(\d+)/);
+    if(!m) return;
+    const card_id = m[1];
+
+    // 張數：連結內或鄰近元素的數字
+    let qty = parseInt(a.textContent.trim().match(/(\d+)\s*$/)?.[1] || '0');
+    if(!qty){
+      // 試著找父層或兄弟節點的數字（官網有時把張數放在 a 外面）
+      const parentText = (a.parentElement?.textContent || '').trim();
+      qty = parseInt(parentText.match(/(\d+)\s*$/)?.[1] || '1');
+    }
+    if(!qty || qty > 60) qty = 1;
+
+    // 分類：往上找最近的標題文字
+    let section = '';
+    let node = a.parentElement;
+    for(let i=0; i<6 && node; i++){
+      const prev = node.previousElementSibling;
+      if(prev && /^H[1-6]$/.test(prev.tagName)){
+        const t = prev.textContent.trim().match(/^(.+?)[（(]\d+[)）]/);
+        if(t){ section = t[1].trim(); break; }
+      }
+      node = node.parentElement;
+    }
+
+    // 同一張卡出現多次（例如卡面區+列表區）→ 取較大的張數，不累加
+    if(map.has(card_id)){
+      const ex = map.get(card_id);
+      ex.qty = Math.max(ex.qty, qty);
+      if(!ex.section && section) ex.section = section;
+    }else{
+      map.set(card_id, { card_id, qty, section: section || '' });
+    }
+  });
+
+  return [...map.values()];
 }
 
 // ── 日中名稱對照表（編號比對失敗時的備援）─────────────────
