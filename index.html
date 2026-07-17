@@ -2286,8 +2286,41 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 });
 
 // ─── 牌組查詢 ────────────────────────────────────────────
-const PROXY = 'https://corsproxy.io/?';
+// 多個 proxy 依序嘗試（官網對非瀏覽器請求有防護，單一 proxy 可能被擋）
+const PROXY_LIST = [
+  { name:'corsproxy.io',  build:(u)=> 'https://corsproxy.io/?' + encodeURIComponent(u) },
+  { name:'allorigins',    build:(u)=> 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
+  { name:'codetabs',      build:(u)=> 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
+  { name:'thingproxy',    build:(u)=> 'https://thingproxy.freeboard.io/fetch/' + u },
+];
+const PROXY = 'https://corsproxy.io/?';  // 保留舊常數避免其他地方引用出錯
 let deckRegion = 'tw';  // 'tw' 或 'jp'
+
+// 依序嘗試各 proxy，回傳第一個成功且內容看起來正確的 HTML
+async function fetchViaProxies(url, validate){
+  const errors = [];
+  for(const p of PROXY_LIST){
+    try{
+      console.info('[牌組查詢] 嘗試 proxy:', p.name);
+      const resp = await fetch(p.build(url));
+      if(!resp.ok){ errors.push(`${p.name}: HTTP ${resp.status}`); continue; }
+      const html = await resp.text();
+      if(!html || html.length < 200){ errors.push(`${p.name}: 回應過短(${html.length}字)`); continue; }
+      // 驗證內容是否含有我們需要的資料
+      if(validate && !validate(html)){
+        errors.push(`${p.name}: 抓到頁面但無卡片資料(${html.length}字)`);
+        continue;
+      }
+      console.info('[牌組查詢] ✓ 成功使用 proxy:', p.name);
+      return { html, proxy:p.name };
+    }catch(e){
+      errors.push(`${p.name}: ${e.message}`);
+    }
+  }
+  const err = new Error('所有連線方式都失敗');
+  err.details = errors;
+  throw err;
+}
 
 // 開關抽屜
 document.getElementById('deckBtn').addEventListener('click',()=>{
@@ -2343,17 +2376,20 @@ async function fetchDeck(){
   document.getElementById('deckFetchBtn').disabled = true;
 
   try{
-    let url, html;
+    let url;
     if(deckRegion === 'tw'){
       url = `https://asia.pokemon-card.com/tw/deck-build/recipe/${code}/`;
     } else {
       url = `https://www.pokemon-card.com/deck/print.html/deckID/${code}/`;
     }
 
-    const proxyUrl = PROXY + encodeURIComponent(url);
-    const resp = await fetch(proxyUrl);
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    html = await resp.text();
+    // 驗證抓回來的 HTML 是否真的含有卡片資料
+    const validate = deckRegion==='tw'
+      ? (h)=> h.includes('/card-search/detail/')
+      : (h)=> h.includes('<table') || h.includes('カード');
+
+    const { html, proxy } = await fetchViaProxies(url, validate);
+    console.info('[牌組查詢] 使用', proxy, '取得', html.length, '字');
 
     const cards = deckRegion==='tw'
       ? parseTWDeck(html)
@@ -2369,7 +2405,12 @@ async function fetchDeck(){
     renderDeckList(cards);
 
   } catch(e){
-    setDeckStatus('查詢失敗：' + e.message,'err');
+    let msg = '查詢失敗：' + e.message;
+    if(e.details){
+      console.warn('[牌組查詢] 各連線方式結果：', e.details);
+      msg += '（詳細原因見 Console）';
+    }
+    setDeckStatus(msg,'err');
   } finally {
     document.getElementById('deckFetchBtn').disabled = false;
   }
