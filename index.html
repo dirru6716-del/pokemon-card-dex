@@ -726,6 +726,17 @@ body.mobile .scroll-btns{display:flex}
 }
 .btn-deck-test:hover{background:linear-gradient(135deg,#48207090,#321850);border-color:#b080ff;box-shadow:0 4px 16px rgba(140,80,224,.35)}
 
+/* ── 列印抽屜底部按鈕：2 欄網格，精簡高度 ── */
+.print-btn-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;
+}
+.print-btn-grid .pf-btn{
+  width:100%;margin:0;padding:9px 6px;
+  font-size:.82rem;letter-spacing:0;border-radius:8px;
+  box-shadow:none;
+}
+.pf-clear{margin-top:7px}
+
 /* ── 模擬器 Modal ── */
 .sim-modal{position:fixed;inset:0;z-index:200;display:none}
 
@@ -1313,16 +1324,15 @@ body.mobile .scroll-btns{display:flex}
         <span>已選 <b id="printKindCnt">0</b> 種</span>
         <span class="print-total">合計 <b id="printTotalCnt">0</b> 張</span>
       </div>
-      <button class="btn-print-pdf" id="doPrintBtn">📄 產生 A4 PDF</button>
-      <button class="btn-print-pdf" id="doSmallPrintBtn" style="background:linear-gradient(135deg,#2a5a3a,#1a3a28);border-color:#4a9a6a;color:#a0e0c0">🖼️ 小圖片列印（僅插畫）</button>
-      <button class="btn-deck-test" id="deckTestBtn">🎲 開始測試牌組</button>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn-deck-save" id="deckSaveBtn">💾 儲存牌庫</button>
-        <button class="btn-deck-import" id="deckImportBtn">📂 匯入牌庫</button>
+      <div class="print-btn-grid">
+        <button class="btn-print-pdf pf-btn" id="doPrintBtn">📄 A4 PDF</button>
+        <button class="btn-print-pdf pf-btn" id="doSmallPrintBtn" style="background:linear-gradient(135deg,#2a5a3a,#1a3a28);border-color:#4a9a6a;color:#a0e0c0">🖼️ 小圖列印</button>
+        <button class="btn-deck-save pf-btn" id="doExportCodeBtn" style="grid-column:1/-1;background:linear-gradient(135deg,#4a3a6a,#2a1a4a);border-color:#8a6ad0;color:#c8b0ff">📤 匯出為官網代碼</button>
+        <button class="btn-deck-save pf-btn" id="deckSaveBtn">💾 儲存牌庫</button>
+        <button class="btn-deck-import pf-btn" id="deckImportBtn">📂 匯入牌庫</button>
       </div>
-      <button class="btn-deck-save" id="doExportCodeBtn" style="width:100%;margin-top:8px;background:linear-gradient(135deg,#4a3a6a,#2a1a4a);border-color:#8a6ad0;color:#c8b0ff">📤 匯出為官網代碼</button>
       <input type="file" id="deckFileInput" accept=".json,application/json" style="display:none">
-      <button class="btn-print-clear" id="printClearBtn">✕ 清空清單</button>
+      <button class="btn-print-clear pf-clear" id="printClearBtn">✕ 清空清單</button>
     </div>
   </div>
 </div>
@@ -3603,7 +3613,7 @@ document.getElementById('printClearBtn').addEventListener('click',()=>{
 // ════════════════════════════════════════════════════════
 let SIM_DECK = [];
 
-document.getElementById('deckTestBtn').addEventListener('click',()=>{
+document.getElementById('deckTestBtn')?.addEventListener('click',()=>{
   if(!PRINT_LIST.length){ alert('清單是空的，請先加入卡片。'); return; }
   SIM_DECK = [];
   PRINT_LIST.forEach(item=>{ for(let i=0;i<item.qty;i++) SIM_DECK.push(item.card); });
