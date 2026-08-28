@@ -4036,15 +4036,20 @@ async function exportPDF(items, btn){
 
     btn.textContent = '⏳ 排版中...';
 
-    // ★ 預先處理寬圖（左右兩半的場地卡）：切成左半、右半兩張，各自當一張卡
-    //   偵測方式：圖片寬>高（一般卡是直式）
+    // ★ 預先處理寬圖（左右兩半的場地卡）
+    //   這種卡：數量 N = 印出 N 張（左右各半交錯），因為左右合起來才是一張完整的卡
+    //   例如數量 2 → 左半1 + 右半1（共2張）；數量 4 → 左半2 + 右半2（共4張）
     const drawList = []; // { base64 } 每個元素畫一格
+    const wideCounter = {}; // 每種寬圖卡已印幾張，用來交錯左右
     for(const card of expanded){
       const base64 = imgMap[card.image_url] || blankCard(card.name);
       if(imgMap[card.image_url] && await isWideImage(base64)){
-        // 寬圖 → 左半 + 右半
-        drawList.push({ base64: await cropHalf(base64, 'L') });
-        drawList.push({ base64: await cropHalf(base64, 'R') });
+        // 寬圖：依這張卡目前的計數，偶數印左半、奇數印右半（交錯）
+        const key = card.image_url;
+        const n = wideCounter[key] || 0;
+        const half = (n % 2 === 0) ? 'L' : 'R';
+        drawList.push({ base64: await cropHalf(base64, half) });
+        wideCounter[key] = n + 1;
       }else{
         drawList.push({ base64 });
       }
