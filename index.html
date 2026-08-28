@@ -4036,6 +4036,20 @@ async function exportPDF(items, btn){
 
     btn.textContent = '⏳ 排版中...';
 
+    // ★ 預先處理寬圖（左右兩半的場地卡）：切成左半、右半兩張，各自當一張卡
+    //   偵測方式：圖片寬>高（一般卡是直式）
+    const drawList = []; // { base64 } 每個元素畫一格
+    for(const card of expanded){
+      const base64 = imgMap[card.image_url] || blankCard(card.name);
+      if(imgMap[card.image_url] && await isWideImage(base64)){
+        // 寬圖 → 左半 + 右半
+        drawList.push({ base64: await cropHalf(base64, 'L') });
+        drawList.push({ base64: await cropHalf(base64, 'R') });
+      }else{
+        drawList.push({ base64 });
+      }
+    }
+
     const pdf = new jsPDF({ orientation:'p', unit:'mm', format:'a4' });
     const cardW=63, cardH=88;
     const startX=(210-cardW*3)/2;
@@ -4043,16 +4057,14 @@ async function exportPDF(items, btn){
     const PER_PAGE=9;
     let cardOnPage=0;
 
-    for(let i=0;i<expanded.length;i++){
+    for(let i=0;i<drawList.length;i++){
       if(cardOnPage===PER_PAGE){ drawCutLines(pdf,startX,startY,cardW,cardH); pdf.addPage(); cardOnPage=0; }
-      const card=expanded[i];
       const col=cardOnPage%3;
       const row=Math.floor(cardOnPage/3);
       const x=startX+col*cardW;
       const y=startY+row*cardH;
 
-      const base64 = imgMap[card.image_url] || blankCard(card.name);
-      pdf.addImage(base64,'JPEG',x,y,cardW,cardH,undefined,'FAST');
+      pdf.addImage(drawList[i].base64,'JPEG',x,y,cardW,cardH,undefined,'FAST');
       cardOnPage++;
     }
     drawCutLines(pdf,startX,startY,cardW,cardH);
@@ -4213,6 +4225,43 @@ function cropArtwork(base64){
         resolve(canvas.toDataURL('image/jpeg', 0.92));
       }catch(e){
         resolve(base64); // 裁切失敗就用原圖
+      }
+    };
+    img.onerror = ()=> resolve(base64);
+    img.src = base64;
+  });
+}
+
+// 判斷一張已載入的 base64 圖是不是「寬圖」（左右兩半合併的場地卡）
+// 一般卡是直式（高>寬），寬圖是橫式（寬明顯>高）
+function isWideImage(base64){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=> resolve(img.naturalWidth > img.naturalHeight * 1.15);
+    img.onerror = ()=> resolve(false);
+    img.src = base64;
+  });
+}
+
+// 把寬圖切成左半或右半，回傳裁好的 base64（維持直式卡比例）
+// half: 'L' 取左半、'R' 取右半
+function cropHalf(base64, half){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      try{
+        const iw = img.naturalWidth, ih = img.naturalHeight;
+        const halfW = iw / 2;
+        const sx = (half === 'R') ? halfW : 0;
+        const canvas = document.createElement('canvas');
+        canvas.width = halfW; canvas.height = ih;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, halfW, ih);
+        ctx.drawImage(img, sx, 0, halfW, ih, 0, 0, halfW, ih);
+        resolve(canvas.toDataURL('image/jpeg', 0.92));
+      }catch(e){
+        resolve(base64);
       }
     };
     img.onerror = ()=> resolve(base64);
