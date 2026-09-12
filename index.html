@@ -1060,7 +1060,7 @@ body.mobile .scroll-btns{display:flex}
   <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
   <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
   <div style="margin-top:14px;font-size:.72rem;color:#5a6a8a;letter-spacing:.5px">
-    版本 2026-09-12 10:55
+    版本 2026-09-12 13:22
   </div>
   <div class="loading-err" id="loadingErr">
     <div id="loadingErrMsg"></div>
@@ -1442,6 +1442,12 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSr6lIc1B
 // ★ 日中名稱對照表（獨立試算表，發布成 CSV）
 //   欄位：日文名稱 / 中文名稱
 const JP_TW_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTY5eYIr8M9z6dcm87agH7TUNdp3lh2ywaGtFyXT0SxU232X_wM_IZVCup5BApIyckbsjp-P4UtfdEn/pub?output=csv';
+
+// ★ 對照表「自動寫入」用的 Apps Script Web App（部署見 apps_script_對照表寫入.gs）
+//   留空＝停用「送出」鈕、只保留手動複製，完全等同舊行為。
+//   ⚠ 這兩個值會出現在公開的 index.html：SECRET 只是輕度遮蔽、非真正保護。
+const JP_TW_APPS_URL    = '';   // 例：https://script.google.com/macros/s/AKfyc.../exec
+const JP_TW_APPS_SECRET = '';   // 需與 Apps Script 內的 SECRET 完全一致
 
 // 從外部試算表載入的對照（會跟程式內建表合併，外部表優先）
 let JP_TW_SHEET_MAP = {};
@@ -2710,10 +2716,11 @@ async function parseJPDeck(html){
 
   // 模糊比對分類關鍵字（標題可能是「グッズ（13）」這種帶數字的）
   function detectSection(text){
-    for(const key in JP_SEC){
-      if(text.startsWith(key)) return JP_SEC[key];
-    }
-    return null;
+    // 只有「整格就是分類名」才算標題列（容許「（13）」這類數字尾綴）。
+    // 用精準比對，避免卡名開頭剛好是分類字（如 ポケモンいれかえ / エネルギーつけかえ）
+    // 被誤判成標題列而整列被丟掉（曾造成日本牌組少算張數）。
+    const t = text.replace(/[（(]\s*\d+\s*[)）]\s*$/, '').trim();
+    return JP_SEC[t] || null;
   }
 
   // 第一輪：用既有方式比對（編號 / 名稱表 / 基本能量表）
@@ -3248,13 +3255,19 @@ function renderPendingMappings(){
       <button class="pending-del" data-pidx="${i}">✕</button>
     </div>`
   ).join('');
+  const sendBtnHtml = JP_TW_APPS_URL
+    ? `<button class="pending-copy" id="pendingSendBtn" style="background:#2e7d5b;border-color:#2e7d5b">📤 送出到對照表</button>`
+    : '';
   box.innerHTML = `
     <div class="pending-hdr">
       📝 待新增對照（${PENDING_MAPPINGS.length}）
+      ${sendBtnHtml}
       <button class="pending-copy" id="pendingCopyBtn">📋 一鍵複製全部</button>
     </div>
     <div class="pending-list">${rows}</div>
-    <div class="pending-tip">複製後貼到你的 Google Sheets 對照表（會自動分成 日文名/日本卡號/中文名/中文卡號 四欄）</div>
+    <div class="pending-tip" id="pendingTip">${JP_TW_APPS_URL
+      ? '按「📤 送出」自動寫入對照表；也可用「📋 複製」手動貼上。'
+      : '複製後貼到你的 Google Sheets 對照表（會自動分成 日文名/日本卡號/中文名/中文卡號 四欄）'}</div>
   `;
 
   // 複製按鈕：四欄用 Tab 分隔，貼到試算表會自動分欄
@@ -3271,6 +3284,12 @@ function renderPendingMappings(){
     }
   });
 
+  // 送出：POST 到 Apps Script Web App，自動附加到對照表
+  const sendBtn = document.getElementById('pendingSendBtn');
+  if(sendBtn){
+    sendBtn.addEventListener('click', ()=> sendPendingToSheet(sendBtn));
+  }
+
   // 刪除單列
   box.querySelectorAll('.pending-del').forEach(b=>{
     b.addEventListener('click',()=>{
@@ -3279,6 +3298,42 @@ function renderPendingMappings(){
       renderPendingMappings();
     });
   });
+}
+
+// ── 送出「待新增對照」到 Google Sheets（Apps Script Web App，自動附加）──
+async function sendPendingToSheet(btn){
+  if(!JP_TW_APPS_URL || !PENDING_MAPPINGS.length) return;
+  const tip  = document.getElementById('pendingTip');
+  const orig = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = '送出中…'; }
+  const rows = PENDING_MAPPINGS.slice();
+  try{
+    const resp = await fetch(JP_TW_APPS_URL, {
+      method: 'POST',
+      // 用 text/plain 避免觸發 CORS 預檢（Apps Script 不處理 OPTIONS）
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ secret: JP_TW_APPS_SECRET, rows })
+    });
+    let data = null;
+    try{ data = await resp.json(); }catch(_){ /* 跨網域可能讀不到回應，視為已送出 */ }
+    if(data && data.ok === false) throw new Error(data.err || '伺服器拒絕（SECRET 不符？）');
+
+    // 成功：把對照即時併入記憶體，讓本回合立刻生效
+    rows.forEach(m=>{
+      const val = { tw: m.tw, twNum: m.twNum || '' };
+      if(m.jpNum) JP_TW_SHEET_PRECISE[m.jp + '|' + m.jpNum] = val;
+      if(!JP_TW_SHEET_MAP[m.jp]) JP_TW_SHEET_MAP[m.jp] = val;
+    });
+    PENDING_MAPPINGS.length = 0;
+    renderPendingMappings();   // 清空後區塊會隱藏，成功訊息改用 alert
+    alert(data && typeof data.added === 'number'
+      ? `✅ 已寫入對照表 ${data.added} 筆（本回合已即時生效）`
+      : '✅ 已送出。若對照表沒更新，請確認 Apps Script 部署與 SECRET 是否一致。');
+  }catch(e){
+    // iOS 看不到 Console → 訊息顯示在畫面上，並保留待新增資料與複製鈕當後備
+    if(tip){ tip.textContent = '❌ 送出失敗：' + e.message + '（可改用「📋 複製」手動貼上）'; tip.style.color = '#d66'; }
+    if(btn){ btn.disabled = false; btn.textContent = orig; }
+  }
 }
 
 function showDeckCardDetail(card){
