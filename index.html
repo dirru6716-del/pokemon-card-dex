@@ -1060,7 +1060,7 @@ body.mobile .scroll-btns{display:flex}
   <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
   <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
   <div style="margin-top:14px;font-size:.72rem;color:#5a6a8a;letter-spacing:.5px">
-    版本 2026-09-12 14:03
+    版本 2026-09-12 14:19
   </div>
   <div class="loading-err" id="loadingErr">
     <div id="loadingErrMsg"></div>
@@ -3896,7 +3896,25 @@ const SAVE_SUBSTITUTIONS = [
 ];
 
 // 找出某張卡應該被換成哪個目標版本（找不到目標就維持原卡）
+// 基本能量「匯出用」卡號白名單：換成 官網代碼系統 / ptcg-tw-sim 認得的特定版本。
+// （由使用者在 ptcg-tw-sim 生成的牌組代碼解碼得來，2026-09-12）
+// 名稱用 CSV 實際值（帶【】括號）。缺的能量（鬥/鋼/妖）之後拿到代碼再補。
+const ENERGY_EXPORT_ID = {
+  '基本【草】能量':'18382',
+  '基本【火】能量':'13185',
+  '基本【水】能量':'18519',
+  '基本【雷】能量':'18383',
+  '基本【超】能量':'14128',
+  '基本【惡】能量':'14152',
+};
+
 function resolveSubstitution(card){
+  // ★ 基本能量優先換成「認得的版本」（修正舊 SAVE_SUBSTITUTIONS 因名稱少了【】而失效的問題）
+  const energyId = ENERGY_EXPORT_ID[card.name];
+  if(energyId){
+    return ALL.find(c=> c.card_id === energyId) || card;
+  }
+
   const rule = SAVE_SUBSTITUTIONS.find(r=>
     card.name === r.matchName &&
     (!r.matchSetIncludes || (card.set_name||'').includes(r.matchSetIncludes))
