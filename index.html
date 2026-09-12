@@ -1060,7 +1060,7 @@ body.mobile .scroll-btns{display:flex}
   <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
   <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
   <div style="margin-top:14px;font-size:.72rem;color:#5a6a8a;letter-spacing:.5px">
-    版本 2026-09-12 14:19
+    版本 2026-09-12 14:48
   </div>
   <div class="loading-err" id="loadingErr">
     <div id="loadingErrMsg"></div>
@@ -2315,12 +2315,12 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 // 多個 proxy 依序嘗試（官網對非瀏覽器請求有防護，單一 proxy 可能被擋）
 // 只保留實測可連線的 proxy（corsproxy.io 已改為需 API key、whateverorigin/thingproxy 已失效）
 const PROXY_LIST = [
-  { name:'allorigins',    build:(u)=> 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
-  { name:'codetabs',      build:(u)=> 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
+  // ★ 依實測速度排序（2026-09-12）：把最常成功的放最前面，避免先卡在慢/壞的 proxy 上逾時。
   { name:'allorigins(get)',build:(u)=> 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
-  // 以下為不同機制的 proxy，可能繞過官網對資料中心 IP 的封鎖
+  { name:'allorigins',    build:(u)=> 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
   { name:'r.jina.ai',     build:(u)=> 'https://r.jina.ai/' + u },
   { name:'cors.eu.org',   build:(u)=> 'https://test.cors.workers.dev/?' + u },
+  { name:'codetabs',      build:(u)=> 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
   { name:'proxy.cors.sh', build:(u)=> 'https://proxy.cors.sh/' + u },
 ];
 const PROXY = 'https://corsproxy.io/?';  // 保留舊常數避免其他地方引用出錯
@@ -2330,7 +2330,7 @@ let lastDeckUrl = '';   // 最後一次查詢的官網網址（失敗時供診�
 // 依序嘗試各 proxy，回傳第一個成功且內容看起來正確的 HTML
 async function fetchViaProxies(url, validate){
   const errors = [];
-  const TIMEOUT = 15000; // 每個 proxy 最多等 15 秒（等太久只是延後失敗，沒有幫助）
+  const TIMEOUT = 10000; // 每個 proxy 最多等 10 秒（等太久只是延後失敗，沒有幫助）
 
   for(const p of PROXY_LIST){
     try{
@@ -3899,20 +3899,23 @@ const SAVE_SUBSTITUTIONS = [
 // 基本能量「匯出用」卡號白名單：換成 官網代碼系統 / ptcg-tw-sim 認得的特定版本。
 // （由使用者在 ptcg-tw-sim 生成的牌組代碼解碼得來，2026-09-12）
 // 名稱用 CSV 實際值（帶【】括號）。缺的能量（鬥/鋼/妖）之後拿到代碼再補。
+// 認得的「基本能量」版本（依元素字 → card_id）。目前缺 鬥/鋼（尚無 ptcg-tw-sim 代碼可解）。
 const ENERGY_EXPORT_ID = {
-  '基本【草】能量':'18382',
-  '基本【火】能量':'13185',
-  '基本【水】能量':'18519',
-  '基本【雷】能量':'18383',
-  '基本【超】能量':'14128',
-  '基本【惡】能量':'14152',
+  '草':'18382', '火':'13185', '水':'18519',
+  '雷':'18383', '超':'14128', '惡':'14152',
 };
+// 從能量卡名取出元素字，相容「基本【火】能量」與「基本火能量」，並把 炎/闘/悪 正規化為 火/鬥/惡
+function basicEnergyChar(name){
+  const m = (name||'').match(/^基本[【\[]?\s*([草火炎水雷超鬥闘惡悪鋼妖])\s*[】\]]?能量$/);
+  if(!m) return null;
+  return ({'炎':'火','闘':'鬥','悪':'惡'})[m[1]] || m[1];
+}
 
 function resolveSubstitution(card){
-  // ★ 基本能量優先換成「認得的版本」（修正舊 SAVE_SUBSTITUTIONS 因名稱少了【】而失效的問題）
-  const energyId = ENERGY_EXPORT_ID[card.name];
-  if(energyId){
-    return ALL.find(c=> c.card_id === energyId) || card;
+  // ★ 基本能量：不論卡名有無【】括號，一律換成 ptcg-tw-sim 認得的版本
+  const et = basicEnergyChar(card.name);
+  if(et && ENERGY_EXPORT_ID[et]){
+    return ALL.find(c=> c.card_id === ENERGY_EXPORT_ID[et]) || card;
   }
 
   const rule = SAVE_SUBSTITUTIONS.find(r=>
