@@ -2305,9 +2305,11 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 // ─── 牌組查詢 ────────────────────────────────────────────
 // 多個 proxy 依序嘗試（官網對非瀏覽器請求有防護，單一 proxy 可能被擋）
 const PROXY_LIST = [
-  { name:'corsproxy.io',  build:(u)=> 'https://corsproxy.io/?' + encodeURIComponent(u) },
   { name:'allorigins',    build:(u)=> 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
   { name:'codetabs',      build:(u)=> 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
+  { name:'corsproxy.io',  build:(u)=> 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
+  { name:'corsproxy舊版', build:(u)=> 'https://corsproxy.io/?' + encodeURIComponent(u) },
+  { name:'whateverorigin',build:(u)=> 'https://whateverorigin.org/get?url=' + encodeURIComponent(u) },
   { name:'thingproxy',    build:(u)=> 'https://thingproxy.freeboard.io/fetch/' + u },
 ];
 const PROXY = 'https://corsproxy.io/?';  // 保留舊常數避免其他地方引用出錯
@@ -2440,7 +2442,10 @@ async function fetchDeck(){
     let msg = '查詢失敗：' + e.message;
     if(e.details){
       console.warn('[牌組查詢] 各連線方式結果：', e.details);
-      msg += '（詳細原因見 Console）';
+      // 直接顯示在畫面上（手機看不到 Console）
+      msg += '<br><span style="font-size:.75rem;opacity:.85;line-height:1.6">'
+           + e.details.map(d=>'• '+d).join('<br>')
+           + '</span>';
     }
     setDeckStatus(msg,'err');
   } finally {
@@ -2450,7 +2455,7 @@ async function fetchDeck(){
 
 function setDeckStatus(msg, cls){
   const el = document.getElementById('deckStatus');
-  el.textContent = msg;
+  el.innerHTML = msg;  // 支援 <br> 等標籤，用於顯示多行診斷訊息
   el.className = 'deck-status' + (cls ? ' '+cls : '');
 }
 
@@ -4444,4 +4449,3 @@ autoLoad();
 </script>
 </body>
 </html>
-
