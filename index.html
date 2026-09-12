@@ -1059,6 +1059,9 @@ body.mobile .scroll-btns{display:flex}
   <h2>POKÉMON CARD DEX</h2>
   <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
   <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
+  <div style="margin-top:14px;font-size:.72rem;color:#5a6a8a;letter-spacing:.5px">
+    版本 2026-09-12 10:35
+  </div>
   <div class="loading-err" id="loadingErr">
     <div id="loadingErrMsg"></div>
     <button class="btn-retry" id="retryBtn">重試</button>
@@ -2304,21 +2307,20 @@ document.getElementById('resetBtn').addEventListener('click',()=>{
 
 // ─── 牌組查詢 ────────────────────────────────────────────
 // 多個 proxy 依序嘗試（官網對非瀏覽器請求有防護，單一 proxy 可能被擋）
+// 只保留實測可連線的 proxy（corsproxy.io 已改為需 API key、whateverorigin/thingproxy 已失效）
 const PROXY_LIST = [
   { name:'allorigins',    build:(u)=> 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u) },
   { name:'codetabs',      build:(u)=> 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u) },
-  { name:'corsproxy.io',  build:(u)=> 'https://corsproxy.io/?url=' + encodeURIComponent(u) },
-  { name:'corsproxy舊版', build:(u)=> 'https://corsproxy.io/?' + encodeURIComponent(u) },
-  { name:'whateverorigin',build:(u)=> 'https://whateverorigin.org/get?url=' + encodeURIComponent(u) },
-  { name:'thingproxy',    build:(u)=> 'https://thingproxy.freeboard.io/fetch/' + u },
+  { name:'allorigins(get)',build:(u)=> 'https://api.allorigins.win/get?url=' + encodeURIComponent(u) },
 ];
 const PROXY = 'https://corsproxy.io/?';  // 保留舊常數避免其他地方引用出錯
 let deckRegion = 'tw';  // 'tw' 或 'jp'
+let lastDeckUrl = '';   // 最後一次查詢的官網網址（失敗時供診斷連結）
 
 // 依序嘗試各 proxy，回傳第一個成功且內容看起來正確的 HTML
 async function fetchViaProxies(url, validate){
   const errors = [];
-  const TIMEOUT = 12000; // 每個 proxy 最多等 12 秒，逾時就換下一個
+  const TIMEOUT = 15000; // 每個 proxy 最多等 15 秒（等太久只是延後失敗，沒有幫助）
 
   for(const p of PROXY_LIST){
     try{
@@ -2335,7 +2337,16 @@ async function fetchViaProxies(url, validate){
       }
 
       if(!resp.ok){ errors.push(`${p.name}: HTTP ${resp.status}`); continue; }
-      const html = await resp.text();
+      let html = await resp.text();
+
+      // 有些 proxy 回傳 JSON 包裝格式（如 allorigins 的 /get），需解包取出真正內容
+      if(html.trim().startsWith('{')){
+        try{
+          const j = JSON.parse(html);
+          if(j.contents) html = j.contents;
+        }catch(e){ /* 不是 JSON 就當原始內容處理 */ }
+      }
+
       if(!html || html.length < 200){ errors.push(`${p.name}: 回應過短(${html.length}字)`); continue; }
       if(validate && !validate(html)){
         errors.push(`${p.name}: 抓到頁面但無卡片資料(${html.length}字)`);
@@ -2414,6 +2425,7 @@ async function fetchDeck(){
     } else {
       url = `https://www.pokemon-card.com/deck/print.html/deckID/${code}/`;
     }
+    lastDeckUrl = url;  // 記錄下來，查詢失敗時供診斷連結使用
 
     // 驗證抓回來的 HTML 是否真的含有卡片資料
     // 台灣版：確認有卡片連結。日本版：放寬（只要頁面夠完整就交給解析器判斷，
@@ -2446,6 +2458,10 @@ async function fetchDeck(){
       msg += '<br><span style="font-size:.75rem;opacity:.85;line-height:1.6">'
            + e.details.map(d=>'• '+d).join('<br>')
            + '</span>';
+      // 附上官網原始網址，方便直接開啟確認該頁是否還有效
+      if(typeof lastDeckUrl === 'string' && lastDeckUrl){
+        msg += `<br><a href="${lastDeckUrl}" target="_blank" style="font-size:.75rem;color:#7ab8ff;text-decoration:underline">▶ 直接開啟官網頁面確認</a>`;
+      }
     }
     setDeckStatus(msg,'err');
   } finally {
