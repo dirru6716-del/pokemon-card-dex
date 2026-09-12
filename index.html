@@ -1650,8 +1650,14 @@ function buildOpts(){
   // 擴充包：依官網發售日排序（最新在最上面）
   // 更新日期：2026/06/02
   const SET_ORDER = [
-    '擴充包「綠寶石風暴」',         // 2026 最新
-    '擴充包「深淵之瞳」',           // 2026-06-05
+    '頂級牌組組合 「太陽伊布・月亮伊布」',  // 2026-09-16 最新
+    '擴充包「30th CELEBRATION」',           // 2026-09-16
+    '擴充包「綠寶石風暴」',                 // 2026-08-07
+    '戰術牌組「超級噴火龍Xex」',            // 2026-07-17
+    '戰術牌組「超級沙奈朵ex」',             // 2026-07-17
+    '戰術牌組「超級巨牙鯊ex」',             // 2026-07-17
+    '戰術牌組「超級快龍ex」',               // 2026-07-17
+    '擴充包「深淵之瞳」',                   // 2026-06-05
     '擴充包「忍者飛旋」',           // 2026-03-27
     'New Trainer Journey',          // 2026-02-26
     '擴充包「虛無歸零」',           // 2026-02-06
@@ -2310,14 +2316,25 @@ let deckRegion = 'tw';  // 'tw' 或 'jp'
 // 依序嘗試各 proxy，回傳第一個成功且內容看起來正確的 HTML
 async function fetchViaProxies(url, validate){
   const errors = [];
+  const TIMEOUT = 12000; // 每個 proxy 最多等 12 秒，逾時就換下一個
+
   for(const p of PROXY_LIST){
     try{
       console.info('[牌組查詢] 嘗試 proxy:', p.name);
-      const resp = await fetch(p.build(url));
+
+      // 用 AbortController 實作逾時，避免某個 proxy 掛住害整個查詢卡死
+      const controller = new AbortController();
+      const timer = setTimeout(()=>controller.abort(), TIMEOUT);
+      let resp;
+      try{
+        resp = await fetch(p.build(url), { signal: controller.signal });
+      }finally{
+        clearTimeout(timer);
+      }
+
       if(!resp.ok){ errors.push(`${p.name}: HTTP ${resp.status}`); continue; }
       const html = await resp.text();
       if(!html || html.length < 200){ errors.push(`${p.name}: 回應過短(${html.length}字)`); continue; }
-      // 驗證內容是否含有我們需要的資料
       if(validate && !validate(html)){
         errors.push(`${p.name}: 抓到頁面但無卡片資料(${html.length}字)`);
         continue;
@@ -2325,7 +2342,9 @@ async function fetchViaProxies(url, validate){
       console.info('[牌組查詢] ✓ 成功使用 proxy:', p.name);
       return { html, proxy:p.name };
     }catch(e){
-      errors.push(`${p.name}: ${e.message}`);
+      const reason = e.name === 'AbortError' ? `逾時(>${TIMEOUT/1000}秒)` : e.message;
+      errors.push(`${p.name}: ${reason}`);
+      console.warn('[牌組查詢]', p.name, '失敗:', reason);
     }
   }
   const err = new Error('所有連線方式都失敗');
@@ -2395,9 +2414,11 @@ async function fetchDeck(){
     }
 
     // 驗證抓回來的 HTML 是否真的含有卡片資料
+    // 台灣版：確認有卡片連結。日本版：放寬（只要頁面夠完整就交給解析器判斷，
+    //   避免日文字元經 proxy 編碼後對不上而誤判失敗）
     const validate = deckRegion==='tw'
       ? (h)=> h.includes('/card-search/detail/')
-      : (h)=> h.includes('<table') || h.includes('カード');
+      : (h)=> h.length > 1000;
 
     const { html, proxy } = await fetchViaProxies(url, validate);
     console.info('[牌組查詢] 使用', proxy, '取得', html.length, '字');
