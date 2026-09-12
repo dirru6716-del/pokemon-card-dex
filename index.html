@@ -3946,8 +3946,18 @@ async function exportToOfficialCode(){
 
   const total = PRINT_LIST.reduce((s,it)=> s + it.qty, 0);
 
+  // 套用置換規則（特別版能量 → 一般版），避免對方系統讀不到稀有版本
+  // 置換後可能出現重複卡片，合併數量
+  const mergedMap = new Map(); // card_id → {card, qty}
+  PRINT_LIST.forEach(it=>{
+    const finalCard = resolveSubstitution(it.card);
+    const key = finalCard.card_id;
+    if(mergedMap.has(key)) mergedMap.get(key).qty += it.qty;
+    else mergedMap.set(key, { card: finalCard, qty: it.qty });
+  });
+
   // 整理成 API 需要的格式
-  const entries = PRINT_LIST.map(it=>({
+  const entries = [...mergedMap.values()].map(it=>({
     cardId: it.card.card_id,
     cardName: it.card.name,
     count: it.qty,
