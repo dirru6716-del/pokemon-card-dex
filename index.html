@@ -1060,7 +1060,7 @@ body.mobile .scroll-btns{display:flex}
   <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar"></div></div>
   <div class="loading-msg" id="loadingMsg">正在連接資料庫…</div>
   <div style="margin-top:14px;font-size:.72rem;color:#5a6a8a;letter-spacing:.5px">
-    版本 2026-09-12 10:35
+    版本 2026-09-12 10:45
   </div>
   <div class="loading-err" id="loadingErr">
     <div id="loadingErrMsg"></div>
@@ -2423,7 +2423,8 @@ async function fetchDeck(){
     if(deckRegion === 'tw'){
       url = `https://asia.pokemon-card.com/tw/deck-build/recipe/${code}/`;
     } else {
-      url = `https://www.pokemon-card.com/deck/print.html/deckID/${code}/`;
+      // ★ 結尾不可加斜線！加了會造成無限重導向，proxy 會卡住直到逾時
+      url = `https://www.pokemon-card.com/deck/print.html/deckID/${code}`;
     }
     lastDeckUrl = url;  // 記錄下來，查詢失敗時供診斷連結使用
 
